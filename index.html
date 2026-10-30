@@ -1,0 +1,2009 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meteo Familia</title>
+<meta name="theme-color" content="#0e7490">
+<meta name="application-name" content="Meteo Familia">
+<meta name="apple-mobile-web-app-title" content="Meteo Familia">
+<link rel="icon" href="favicon.png" type="image/png" sizes="64x64">
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<style>
+/* Layout: una columna de hasta 960 px. Controles y leyenda arriba, resumen del modelo de referencia,
+   resumen por días (7 días), comparación entre modelos, gráficos (temperatura, precipitación,
+   nubosidad y sol, viento), tabla horaria y diagnóstico de datos. */
+:root{
+  color-scheme: light;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --page:#f9f9f7; --surface:#fcfcfb; --wash:#f0efec;
+  --ink:#0b0b0b; --ink2:#52514e; --muted:#7a7872;
+  --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --accent:#0e7490; --on-accent:#ffffff;
+  --m-hd:#eb6834; --m-arome:#4a3aa7; --m-ifs:#1baf7a; --m-icon:#eda100;
+  --rain:#2a78d6;
+  --bad:#b32a2a; --cloud:#5b6573;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --wash:#232321;
+    --ink:#ffffff; --ink2:#c3c2b7; --muted:#9a988f;
+    --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
+    --accent:#5cc3d6; --on-accent:#0b0b0b;
+    --m-hd:#d95926; --m-arome:#9085e9; --m-ifs:#199e70; --m-icon:#c98500;
+    --rain:#3987e5;
+    --bad:#ec7a7a; --cloud:#c8d0da;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19; --wash:#232321;
+  --ink:#ffffff; --ink2:#c3c2b7; --muted:#9a988f;
+  --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
+  --accent:#5cc3d6; --on-accent:#0b0b0b;
+  --m-hd:#d95926; --m-arome:#9085e9; --m-ifs:#199e70; --m-icon:#c98500;
+  --rain:#3987e5;
+  --bad:#ec7a7a; --cloud:#c8d0da;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--page);color:var(--ink);font:15px/1.45 var(--font)}
+.wrap{max-width:960px;margin:0 auto;padding:20px 16px 56px}
+h1{font-size:22px;line-height:1.2;font-weight:650;margin:0;text-wrap:balance}
+h2{font-size:15px;font-weight:650;margin:0 0 2px}
+.sub{color:var(--ink2);font-size:13px;margin:4px 0 0}
+.hint{color:var(--muted);font-size:12px;margin:0 0 10px}
+.sub-h{font-size:12px;font-weight:600;color:var(--ink2);margin:14px 0 4px}
+.sub-h:first-child{margin-top:4px}
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.brand{display:flex;gap:12px;align-items:center;min-width:0}
+.logo{width:64px;height:64px;border-radius:14px;flex:none;display:block;background:#fff;box-shadow:0 0 0 1px var(--ring)}
+.status{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{background:var(--surface);border:0;box-shadow:0 0 0 1px var(--ring);border-radius:8px;padding:8px 12px;min-height:40px;font-size:13px}
+.btn:hover{background:var(--wash)}
+.btn:disabled{opacity:.5;cursor:default}
+.controls{display:flex;flex-wrap:wrap;gap:14px 20px;margin-top:18px;align-items:flex-end}
+.ctl{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ctl>label,.ctl>span.lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.seg{display:inline-flex;box-shadow:0 0 0 1px var(--ring);border-radius:8px;overflow:hidden;background:var(--surface);max-width:100%}
+.seg button{background:transparent;border:0;padding:8px 12px;min-height:40px;font-size:13px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.seg button+button{box-shadow:inset 1px 0 0 var(--ring)}
+.seg button[aria-checked="true"]{background:var(--accent);color:var(--on-accent);font-weight:600}
+select{background:var(--surface);border:0;box-shadow:0 0 0 1px var(--ring);border-radius:8px;padding:8px 10px;min-height:40px;font-size:13px;max-width:100%}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:0;box-shadow:0 0 0 1px var(--ring);border-radius:999px;padding:7px 12px;min-height:36px;font-size:13px}
+.chip .key{width:16px;height:3px;border-radius:2px;flex:none}
+.chip[aria-pressed="false"]{opacity:.45}
+.chip[aria-pressed="false"] .nm{text-decoration:line-through}
+.note{margin:10px 0 0;font-size:12px;color:var(--muted)}
+.note:empty{display:none}
+.banner{margin-top:16px;padding:12px 14px;border-radius:10px;background:var(--wash);box-shadow:0 0 0 1px var(--ring);font-size:13px;color:var(--ink)}
+.banner b{color:var(--bad)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:18px}
+.tile{background:var(--surface);box-shadow:0 0 0 1px var(--ring);border-radius:10px;padding:12px 14px;min-width:0}
+.tile .k{font-size:12px;color:var(--muted)}
+.tile .v{font-size:24px;line-height:1.2;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
+.tile .v small{font-size:13px;font-weight:500;color:var(--ink2);margin-left:3px}
+.tile .s{font-size:12px;color:var(--ink2);margin-top:2px}
+.card{background:var(--surface);box-shadow:0 0 0 1px var(--ring);border-radius:12px;padding:14px;margin-top:14px;min-width:0}
+.card-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:flex-end;justify-content:space-between;margin-bottom:6px}
+.card-head .hint{margin:0}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th{font-weight:500;color:var(--muted);text-align:right;padding:6px 8px;border-bottom:1px solid var(--grid);white-space:nowrap;background:var(--surface)}
+td{padding:7px 8px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+@media (max-width:520px){th,td{padding-left:5px;padding-right:5px}table{font-size:12px}}
+tr.dim td{opacity:.45}
+tr.day td{text-align:left;font-weight:600;color:var(--ink2);background:var(--wash);padding:5px 8px}
+.scroll-y{max-height:440px;overflow:auto}
+.scroll-y th{position:sticky;top:0;z-index:1}
+.dt td small,.cmp-t td small{display:block;color:var(--muted);font-size:11px;line-height:1.25}
+.dt th,.cmp-t th{white-space:normal;line-height:1.2;vertical-align:bottom}
+.dt td:first-child,.cmp-t td:first-child{white-space:normal}
+.dt td.rg{color:var(--ink2)}
+.mk{display:inline-flex;align-items:center;gap:8px}
+.mk .key{width:12px;height:3px;border-radius:2px;flex:none}
+.muted{color:var(--muted)}
+.chart{position:relative}
+.chart svg{display:block;max-width:100%;touch-action:pan-y}
+.ax{fill:var(--muted);font-size:11px;font-family:var(--font)}
+.axm{fill:var(--ink2);font-size:11px;font-weight:600;font-family:var(--font)}
+.gl{stroke:var(--grid);stroke-width:1}
+.zl{stroke:var(--axis);stroke-width:1}
+.cross{stroke:var(--axis);stroke-width:1}
+.tip{position:absolute;pointer-events:none;background:var(--surface);box-shadow:0 0 0 1px var(--ring),0 8px 24px rgba(0,0,0,.18);border-radius:8px;padding:8px 10px;font-size:12px;min-width:150px;z-index:3}
+.tip .t{color:var(--muted);margin-bottom:4px}
+.tip .r{display:flex;align-items:center;gap:8px;justify-content:space-between;line-height:1.6}
+.tip .key{width:12px;height:3px;border-radius:2px;flex:none}
+.tip .n{color:var(--ink2);flex:1}
+.tip .v{font-weight:650;color:var(--ink);font-variant-numeric:tabular-nums}
+.panel+.panel{margin-top:6px}
+.ph{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px;margin:6px 0 0}
+.ph .key{width:12px;height:3px;border-radius:2px;flex:none}
+.ph .tot{color:var(--ink2);font-size:12px;font-variant-numeric:tabular-nums}
+.foot{margin-top:22px;font-size:12px;color:var(--muted);line-height:1.5}
+.foot a{color:var(--ink2)}
+details.diag summary{cursor:pointer;font-size:13px;font-weight:600;min-height:32px;display:flex;align-items:center}
+.diag td,.diag th{font-size:12px}
+.cx-h{font-size:13px;font-weight:600;margin:20px 0 4px}
+.cx-m{font-size:13px;font-weight:600;margin:14px 0 4px}
+.cx-t{border-collapse:separate;border-spacing:4px;width:100%;max-width:420px;table-layout:fixed;margin:0 -4px}
+.cx-t td{padding:6px 2px;text-align:center;border-radius:8px;background:var(--surface);box-shadow:0 0 0 1px var(--ring);line-height:1.35;font-variant-numeric:tabular-nums;white-space:normal}
+.cx-t td.c{box-shadow:0 0 0 2px var(--ink2)}
+.cx-t td small{display:block;color:var(--muted);font-size:11px}
+.cx-s{font-size:12px;color:var(--muted);margin:4px 0 0}
+.cx-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;font-size:12px;color:var(--muted)}
+.cx-row select{min-height:36px;font-size:13px}
+.dg-row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:0 0 10px;font-size:13px}
+#cxMap{height:340px;max-width:100%;border-radius:10px;box-shadow:0 0 0 1px var(--ring);margin-top:8px}
+.leaflet-tooltip.cxt{background:var(--surface);color:var(--ink);border:0;box-shadow:0 0 0 1px var(--ring);padding:2px 5px;font-size:11px;line-height:1.3;text-align:center}
+.diag td.l{text-align:left;white-space:normal}
+.ev{line-height:1.7;white-space:nowrap}
+.ev b{font-weight:600;color:var(--ink)}
+.ev.past,.ev.past b{color:var(--muted)}
+.ev.past b{font-weight:500}
+.cf{display:inline-block;min-width:36px;padding:1px 7px;border-radius:999px;text-align:center;font-weight:600;font-size:12px;line-height:1.5}
+.ev.past .cf{opacity:.6}
+#tideTiles{margin:10px 0 14px}
+.tdl{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--muted);margin:8px 0 12px}
+.tdl i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;box-sizing:border-box;vertical-align:-1px;border:2px solid var(--accent)}
+.tdl i.hw{background:var(--accent)}
+.tdl i.lw{background:var(--surface)}
+.tdl i.ln{width:16px;height:0;border-radius:0;border-width:0 0 1px;border-style:dashed;border-color:var(--axis);vertical-align:3px}
+[hidden]{display:none!important}
+.loading .chart,.loading .tiles,.loading .tbl-wrap{opacity:.65}
+@media (prefers-reduced-motion: no-preference){.chart,.tiles,.tbl-wrap{transition:opacity .2s}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="top">
+    <div class="brand">
+      <img class="logo" src="icon-192.png" width="64" height="64" alt="Meteo Familia">
+      <div>
+        <h1 id="h1">Meteo Familia</h1>
+        <p class="sub">Madrid · Reinosa · Santander · AROME, IFS e ICON-EU · temperatura, lluvia, viento y nubosidad hasta 7 días, y mareas en Santander</p>
+      </div>
+    </div>
+    <div class="status">
+      <span id="updated">Cargando datos…</span>
+      <button class="btn" id="refresh" type="button">Actualizar</button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="ctl">
+      <span class="lbl" id="lbl-place">Lugar</span>
+      <div class="seg" id="seg-place" role="radiogroup" aria-labelledby="lbl-place"></div>
+    </div>
+    <div class="ctl">
+      <span class="lbl" id="lbl-win">Ventana</span>
+      <div class="seg" id="seg-win" role="radiogroup" aria-labelledby="lbl-win"></div>
+    </div>
+    <div class="ctl">
+      <label for="refModel">Modelo de referencia</label>
+      <select id="refModel"></select>
+    </div>
+  </div>
+  <p class="note" id="refNow"></p>
+  <p class="note" id="placeNote"></p>
+
+  <div class="legend" id="legend" role="group" aria-label="Modelos visibles"></div>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2>Resumen por días</h2>
+        <p class="hint" id="dHint"></p>
+      </div>
+      <div class="ctl">
+        <label for="dvar">Mostrar</label>
+        <select id="dvar"></select>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table id="daily" class="dt"></table></div>
+  </section>
+
+  <section class="card" id="tideCard" hidden>
+    <h2>Mareas en Santander</h2>
+    <p class="hint" id="tideHint"></p>
+    <div class="tiles" id="tideTiles"></div>
+    <div class="chart" id="chTide"></div>
+    <p class="tdl"><span><i class="hw"></i>Pleamar</span><span><i class="lw"></i>Bajamar</span><span><i class="ln"></i>Nivel medio</span></p>
+    <div class="tbl-wrap"><table id="tideDays" class="dt"></table></div>
+    <p class="hint" id="tideNote" style="margin-top:10px"></p>
+  </section>
+
+  <section class="card">
+    <h2>Comparación de modelos</h2>
+    <p class="hint" id="cmpHint"></p>
+    <div class="tbl-wrap"><table id="cmp" class="cmp-t"></table></div>
+  </section>
+
+  <section class="card">
+    <h2>Temperatura</h2>
+    <p class="hint" id="tHint"></p>
+    <div class="chart" id="chT"></div>
+  </section>
+
+  <section class="card">
+    <h2>Precipitación por hora</h2>
+    <p class="hint" id="pHint"></p>
+    <div id="chPc"></div>
+    <div id="chP"></div>
+  </section>
+
+  <section class="card">
+    <h2>Nubosidad y sol</h2>
+    <p class="hint" id="sHint"></p>
+    <div id="chS"></div>
+  </section>
+
+  <section class="card">
+    <h2>Viento</h2>
+    <p class="hint" id="wHint"></p>
+    <div class="chart" id="chW"></div>
+  </section>
+
+  <section class="card">
+    <h2>Tabla horaria</h2>
+    <p class="hint" id="hHint"></p>
+    <div class="tbl-wrap scroll-y"><table id="hourly"></table></div>
+  </section>
+
+  <section class="card">
+    <details class="diag">
+      <summary>Diagnóstico de datos</summary>
+      <p class="hint">Estado de cada llamada a Open-Meteo. Si algo no cuadra, copia este diagnóstico y envíalo. En «Celdas» se ve la celda de cada modelo para cada lugar y la altura del punto según Open-Meteo. IFS usa una rejilla irregular, así que su celda no se compara con la «más cercana».</p>
+      <div class="dg-row">
+        <label for="csel">Celda que elige cada modelo</label>
+        <select id="csel">
+          <option value="land">Tierra (lo que recomienda Open-Meteo)</option>
+          <option value="nearest">La más cercana al punto</option>
+        </select>
+      </div>
+      <div class="tbl-wrap"><table id="diagTbl"></table></div>
+      <p><button class="btn" id="copyDiag" type="button">Copiar diagnóstico</button> <span class="muted" id="copyMsg"></span></p>
+      <h3 class="cx-h">Celdas vecinas de cada modelo</h3>
+      <p class="hint">Pide a Open-Meteo las 9 celdas (3×3) que rodean a la que usa el panel en el lugar elegido (la central), con su altura media y la lluvia prevista en 48 h. Una celda de mar sale con 0 m. Sirve para valorar si alguna vecina representa mejor el sitio. Solo se consulta al pulsar el botón (una petición por modelo).</p>
+      <p><button class="btn" id="cellsBtn" type="button">Consultar celdas vecinas</button> <span class="muted" id="cellsMsg"></span></p>
+      <div id="cellsOut"></div>
+    </details>
+  </section>
+
+  <p class="foot">
+    Datos: Météo-France (AROME), ECMWF (IFS) y DWD (ICON-EU), servidos por
+    <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> con licencia CC BY 4.0.
+    Mareas de Santander: cálculo armónico propio con las constantes de los mareógrafos de Santander y Brest de la base
+    <a href="https://doi.org/10.17882/109129" target="_blank" rel="noopener">TICON-4</a>
+    (Hart-Davis, Dettmering y Seitz, 2025; Santander con licencia CC BY-NC 4.0 y Brest con CC BY 4.0), recopiladas en la
+    <a href="https://github.com/openwatersio/tide-database" target="_blank" rel="noopener">base de datos de Open Waters</a>.
+    Previsión orientativa. El viento es el del modelo a 10 m y en zonas expuestas las rachas suelen ser mayores.
+    Para avisos oficiales (lluvia, viento, costeros) consulta la AEMET.
+    Página personal y no oficial.
+  </p>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ================= Configuración ================= */
+var CONFIG = {
+  tz: 'Europe/Madrid',
+  hours: 168,                       // 7 días; cada modelo devuelve datos hasta donde llega y el resto vacío
+  refreshMin: 30,
+  // Puntos de previsión (coordenadas aproximadas). tide:true = el lugar tiene tarjeta de mareas.
+  places: [
+    {id:'madrid',    label:'Madrid',    lat:40.4321, lon:-3.6882, tide:false},
+    {id:'reinosa',   label:'Reinosa',   lat:42.9988, lon:-4.1402, tide:false},
+    {id:'santander', label:'Santander', lat:43.4688, lon:-3.7786, tide:true}
+  ],
+  windows: [
+    {h:24,  label:'24 h'},
+    {h:48,  label:'48 h'},
+    {h:72,  label:'72 h'},
+    {h:120, label:'5 días'},
+    {h:168, label:'7 días'}
+  ]
+};
+var API = 'https://api.open-meteo.com/v1/forecast';
+var CORE_VARS = ['temperature_2m','precipitation','wind_speed_10m','wind_direction_10m','wind_gusts_10m'];
+var RAIN_MIN = 0.1;                 // mm/h a partir de los cuales se cuenta una hora como "con lluvia"
+var COVER_MIN = 0.9;                // fracción de horas de un día que debe cubrir un modelo para mostrarlo en el resumen por días
+var REF_COVER = 0.75;               // fracción de la ventana que debe cubrir un modelo para elegirlo como referencia automática (AROME llega a 43-51 h según la salida)
+
+// Nubes por capas y minutos de sol: si Open-Meteo rechaza alguna con un 400, se piden de nuevo sin ellas.
+var CLOUD_VARS = ['cloud_cover_low','cloud_cover_mid','cloud_cover_high','sunshine_duration'];
+
+var MODELS = [
+  // AROME 1,5 km: en Open-Meteo no trae 'cloud_cover' (visto en el diagnóstico de Baqueira), no se pide.
+  {id:'arome_hd', api:'meteofrance_arome_france_hd', name:'AROME 1,5 km', color:'var(--m-hd)',
+   surface:CORE_VARS.concat(CLOUD_VARS)},
+  {id:'arome', api:'meteofrance_arome_france', name:'AROME 2,5 km', color:'var(--m-arome)',
+   surface:CORE_VARS.concat(['cloud_cover'], CLOUD_VARS)},
+  {id:'ifs', api:'ecmwf_ifs', name:'IFS 9 km', color:'var(--m-ifs)',
+   surface:CORE_VARS.concat(['cloud_cover'], CLOUD_VARS)},
+  {id:'icon', api:'icon_eu', name:'ICON-EU 7 km', color:'var(--m-icon)',
+   surface:CORE_VARS.concat(['cloud_cover'], CLOUD_VARS)}
+];
+var MODEL_BY_ID = {};
+var CELLSTEP = {arome_hd:0.01, arome:0.025, icon:0.0625, ifs:0.1};   // paso de rejilla esperado de cada modelo (°)
+MODELS.forEach(function(m){ MODEL_BY_ID[m.id] = m; m.ok = false; m.err = null; m.A = null; m.loading = false; m.stale = false; });
+
+var DAILY_VARS = [
+  {k:'rain',  label:'Lluvia (mm)',            d:1},
+  {k:'tmax',  label:'Temperatura máxima (°C)', d:1},
+  {k:'tmin',  label:'Temperatura mínima (°C)', d:1},
+  {k:'gust',  label:'Racha máxima (km/h)',    d:0},
+  {k:'cloud', label:'Nubosidad media (%)',    d:0},
+  {k:'sun',   label:'Sol directo (h)',        d:1}
+];
+
+/* ================= Estado ================= */
+var STORE_KEY = 'familia-meteo-v1';   // propio de esta página: las páginas del mismo usuario comparten origen (artzf-stack.github.io)
+var STORE_VER = 1;
+var state = {v:STORE_VER, place:'madrid', win:48, ref:'auto', dvar:'rain', csel:'land', vis:{arome_hd:true, arome:false, ifs:true, icon:true}};
+try{
+  var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+  if(saved){
+    ['place','win','ref','dvar','csel'].forEach(function(k){ if(saved[k] !== undefined) state[k] = saved[k]; });
+    if(saved.vis) MODELS.forEach(function(m){ if(saved.vis[m.id] !== undefined) state.vis[m.id] = !!saved.vis[m.id]; });
+  }
+}catch(e){}
+if(!CONFIG.places.some(function(p){ return p.id === state.place; })) state.place = CONFIG.places[0].id;
+if(!CONFIG.windows.some(function(w){ return w.h === state.win; })) state.win = 48;
+if(state.ref !== 'auto' && !MODEL_BY_ID[state.ref]) state.ref = 'auto';
+if(!DAILY_VARS.some(function(v){ return v.k === state.dvar; })) state.dvar = 'rain';
+if(state.csel !== 'land' && state.csel !== 'nearest') state.csel = 'land';
+function persist(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
+
+var MASTER = [];      // eje horario común (ISO local)
+var DIAG = [];        // entradas de diagnóstico
+var LAST_OK = null;   // Date de la última carga correcta
+
+/* ================= Utilidades ================= */
+var DOW = ['dom','lun','mar','mié','jue','vie','sáb'];
+var MON = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+var CARD = ['N','NE','E','SE','S','SO','O','NO'];
+function pad(n){ return (n < 10 ? '0' : '') + n; }
+function parseT(s){
+  var m = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)/.exec(s);
+  if(!m) return {y:0,mo:0,d:0,h:0,dow:0};
+  return {y:+m[1], mo:+m[2]-1, d:+m[3], h:+m[4], dow:new Date(+m[1], +m[2]-1, +m[3]).getDay()};
+}
+function fmtHour(s){ var t = parseT(s); return DOW[t.dow] + ' ' + t.d + ' · ' + pad(t.h) + ':00'; }
+function fmtDay(s){ var t = parseT(s); return DOW[t.dow] + ' ' + t.d + ' ' + MON[t.mo]; }
+function fmt(v, d){
+  if(v === null || v === undefined || isNaN(v)) return '–';
+  var s = Number(v).toLocaleString('es-ES', {minimumFractionDigits:d||0, maximumFractionDigits:d||0, useGrouping:false});
+  return s.replace('-', '−');
+}
+function fmtK(v){ // miles con punto
+  if(v === null || v === undefined || isNaN(v)) return '–';
+  return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+// Lluvia horaria: los valores muy pequeños (llovizna) no se redondean a 0.
+function fmtP(v){
+  if(v === null || v === undefined || isNaN(v)) return '–';
+  if(v <= 0) return '0';
+  if(v < 0.1) return '<0,1';
+  return fmt(v, 1);
+}
+// Intensidad según los umbrales de la AEMET (mm/h).
+function rainWord(v){
+  if(v === null || v === undefined) return '';
+  if(v < RAIN_MIN) return 'sin lluvia';
+  return v <= 2 ? 'débil' : v <= 15 ? 'moderada' : v <= 30 ? 'fuerte' : v <= 60 ? 'muy fuerte' : 'torrencial';
+}
+function cardinal(deg){ return CARD[Math.round(((deg % 360) + 360) % 360 / 45) % 8]; }
+function isNum(v){ return typeof v === 'number' && isFinite(v); }
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+function plural(n, one, many){ return n + ' ' + (n === 1 ? one : many); }
+
+var svgNS = 'http://www.w3.org/2000/svg';
+function S(tag, attrs, parent){
+  var e = document.createElementNS(svgNS, tag);
+  if(attrs){ for(var k in attrs){ if(attrs[k] !== null && attrs[k] !== undefined) e.setAttribute(k, attrs[k]); } }
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function H(tag, attrs, text, parent){
+  var e = document.createElement(tag);
+  if(attrs){ for(var k in attrs){ if(attrs[k] !== null && attrs[k] !== undefined) e.setAttribute(k, attrs[k]); } }
+  if(text !== null && text !== undefined) e.textContent = text;
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function $(id){ return document.getElementById(id); }
+function clear(node){ while(node.firstChild) node.removeChild(node.firstChild); }
+
+function niceNum(x, round){
+  var e = Math.floor(Math.log10(x)), f = x / Math.pow(10, e), nf;
+  if(round){ nf = f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10; }
+  else { nf = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10; }
+  return nf * Math.pow(10, e);
+}
+function niceScale(min, max, count){
+  if(!isFinite(min) || !isFinite(max)){ min = 0; max = 1; }
+  if(min === max){ max = min + 1; }
+  var range = niceNum(max - min, false);
+  var step = niceNum(range / Math.max(1, count - 1), true);
+  var lo = Math.floor(min / step) * step, hi = Math.ceil(max / step) * step, ticks = [];
+  for(var v = lo; v <= hi + step * 0.001; v += step){ ticks.push(Math.round(v / step) * step); }
+  return {min:lo, max:hi, ticks:ticks, step:step};
+}
+// Distancia entre dos puntos en km (haversine).
+function distKm(a, b){
+  var R = 6371, rad = Math.PI / 180, dLa = (b.lat - a.lat) * rad, dLo = (b.lon - a.lon) * rad;
+  var x = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLo / 2) * Math.sin(dLo / 2);
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+
+/* ================= Carga de datos ================= */
+// Una sola llamada por modelo con todos los lugares (Open-Meteo admite varias coordenadas separadas por comas).
+// Sin 'elevation': Open-Meteo usa la altura de su modelo digital del terreno para cada punto y ajusta la temperatura.
+function buildUrl(model, vars){
+  var lat = [], lon = [];
+  CONFIG.places.forEach(function(p){ lat.push(p.lat); lon.push(p.lon); });
+  var p = ['latitude=' + lat.join(','), 'longitude=' + lon.join(',')];
+  if(state.csel === 'nearest') p.push('cell_selection=nearest');
+  p.push('hourly=' + vars.join(','), 'models=' + model.api, 'forecast_hours=' + CONFIG.hours,
+         'timezone=' + encodeURIComponent(CONFIG.tz), 'wind_speed_unit=kmh', 'precipitation_unit=mm', 'temperature_unit=celsius');
+  return API + '?' + p.join('&');
+}
+function fetchJson(url){
+  var ctl = new AbortController();
+  var timer = setTimeout(function(){ ctl.abort(); }, 15000);
+  return fetch(url, {signal: ctl.signal}).then(function(r){
+    return r.json().catch(function(){ return null; }).then(function(j){
+      clearTimeout(timer);
+      if(!r.ok){ var er = new Error((j && j.reason) ? j.reason : ('HTTP ' + r.status)); er.status = r.status; throw er; }
+      return j;
+    });
+  }, function(e){ clearTimeout(timer); throw new Error(e && e.name === 'AbortError' ? 'tiempo de espera agotado' : (e && e.name === 'TypeError') ? 'sin conexión con Open-Meteo' : (e && e.message) || 'sin conexión'); });
+}
+// Open-Meteo responde 429 "Too many concurrent requests" si se lanzan muchas llamadas a la vez:
+// se reintenta con espera creciente. Solo los errores 400 (variable no admitida) justifican pedir menos variables.
+function isBusy(e){ return !!e && (e.status === 429 || e.status >= 500 || /concurrent|rate limit|too many/i.test(e.message || '')); }
+function fetchRetry(url, left){
+  if(left === undefined) left = 3;
+  return fetchJson(url).catch(function(e){
+    if(left > 0 && isBusy(e)){
+      return new Promise(function(res){ setTimeout(res, 1200 * (4 - left)); }).then(function(){ return fetchRetry(url, left - 1); });
+    }
+    throw e;
+  });
+}
+function runPool(tasks, n){
+  return new Promise(function(resolve){
+    var i = 0, active = 0, done = 0;
+    if(!tasks.length){ resolve(); return; }
+    function fin(){ active--; done++; if(done === tasks.length) resolve(); else next(); }
+    function next(){
+      while(active < n && i < tasks.length){ active++; tasks[i++]().then(fin, fin); }
+    }
+    next();
+  });
+}
+function emptyVars(h, vars){
+  return vars.filter(function(v){
+    var a = h[v]; if(!a) return true;
+    for(var i = 0; i < a.length; i++){ if(a[i] !== null) return false; }
+    return true;
+  });
+}
+function newDiag(model, kind, url){
+  var d = {model:model.name, kind:kind, ok:null, msg:'', url:url, hours:[], empty:[], grids:null, t0:Date.now(), ms:null};
+  DIAG.push(d);
+  return d;
+}
+function loadSurface(model){
+  var url = buildUrl(model, model.surface), usedVars = model.surface, note = '';
+  var d = newDiag(model, 'superficie', url);
+  return fetchRetry(url).catch(function(e){
+    if(e.status !== 400) throw e;
+    var base = model.surface.filter(function(v){ return CLOUD_VARS.indexOf(v) < 0; });
+    note = 'sin nubes por capas ni sol tras error: ' + e.message;
+    usedVars = base;
+    url = buildUrl(model, base);
+    return fetchRetry(url);
+  }).catch(function(e){
+    if(e.status !== 400) throw e;
+    note = 'variables reducidas tras error: ' + e.message;
+    usedVars = CORE_VARS;
+    url = buildUrl(model, CORE_VARS);
+    return fetchRetry(url);
+  }).then(function(j){
+    var arr = Array.isArray(j) ? j : [j];
+    var h0 = arr[0] && arr[0].hourly;
+    if(!h0 || !h0.time || !h0.time.length) throw new Error('respuesta sin datos horarios');
+    if(arr.length < CONFIG.places.length) throw new Error('respuesta con ' + arr.length + ' lugar(es) en lugar de ' + CONFIG.places.length);
+    model.rawTimes = h0.time;
+    model.raw = arr.map(function(o){ return o.hourly; });
+    model.grids = arr.map(function(o, k){ return {place:CONFIG.places[k] ? CONFIG.places[k].id : null, lat:o.latitude, lon:o.longitude, elev:o.elevation, mid:model.id}; });
+    // Horas con temperatura y variables sin ningún dato, por lugar (un modelo puede cubrir un sitio y no otro).
+    d.hours = []; d.empty = [];
+    model.raw.forEach(function(hp, k){
+      var temps = (hp && hp.temperature_2m) || [], n = 0;
+      for(var i = 0; i < temps.length; i++){ if(temps[i] !== null) n++; }
+      d.hours.push(n);
+      d.empty.push(emptyVars(hp || {}, usedVars));
+    });
+    d.ok = true; d.msg = note; d.url = url; d.nvars = usedVars.length; d.grids = model.grids; d.ms = Date.now() - d.t0;
+    model.ok = true; model.err = null; model.stale = false;
+  }).catch(function(e){
+    d.ok = false; d.msg = e.message; d.url = url; d.ms = Date.now() - d.t0;
+    model.err = e.message;
+    // En una actualización fallida se conservan los datos anteriores en vez de vaciar la página.
+    if(model.ok && model.raw){ model.stale = true; } else { model.ok = false; }
+  }).then(function(){ model.loading = false; });
+}
+function align(times, arr){
+  var map = {}, out = new Array(MASTER.length), i;
+  for(i = 0; i < times.length; i++) map[times[i]] = i;
+  for(i = 0; i < MASTER.length; i++){
+    var j = map[MASTER[i]];
+    var v = (j === undefined || !arr) ? null : arr[j];
+    out[i] = isNum(v) ? v : null;
+  }
+  return out;
+}
+function buildAligned(){
+  MASTER = [];
+  MODELS.forEach(function(m){ if(m.ok && m.rawTimes.length > MASTER.length) MASTER = m.rawTimes.slice(); });
+  MODELS.forEach(function(m){
+    m.A = null;
+    if(m.ok){
+      m.A = m.raw.map(function(h){
+        var o = {};
+        for(var k in h){ if(k !== 'time') o[k] = align(m.rawTimes, h[k]); }
+        return o;
+      });
+    }
+  });
+}
+var LOADING = false, JOBS_TOTAL = 0, JOBS_DONE = 0;
+function loadAll(){
+  if(LOADING) return Promise.resolve();      // no solapar actualizaciones
+  LOADING = true;
+  var app = $('app');
+  app.classList.add('loading');
+  DIAG = [];
+  MODELS.forEach(function(m){ m.loading = true; });
+  var jobs = [];
+  MODELS.forEach(function(m){ jobs.push(function(){ return loadSurface(m); }); });
+  JOBS_TOTAL = jobs.length; JOBS_DONE = 0;
+  renderUpdated();
+  // Cada llamada que termina repinta la página: un modelo lento no bloquea a los demás.
+  var steps = jobs.map(function(job){
+    return function(){ return job().then(function(){ JOBS_DONE++; buildAligned(); renderAll(); }); };
+  });
+  return runPool(steps, 3).then(function(){
+    LOADING = false;
+    MODELS.forEach(function(m){ m.loading = false; });
+    buildAligned();
+    if(MODELS.some(function(m){ return m.ok && !m.stale; })){ LAST_OK = new Date(); }
+    app.classList.remove('loading');
+    renderAll();
+  });
+}
+
+/* ================= Cálculos ================= */
+function placeIndex(){
+  for(var i = 0; i < CONFIG.places.length; i++){ if(CONFIG.places[i].id === state.place) return i; }
+  return 0;
+}
+function place(){ return CONFIG.places[placeIndex()]; }
+function ser(model, name){
+  if(!model.A) return null;
+  var a = model.A[placeIndex()];
+  return (a && a[name]) ? a[name] : null;
+}
+function nullArr(){ var a = new Array(MASTER.length); for(var i = 0; i < a.length; i++) a[i] = null; return a; }
+function hasData(arr){ if(!arr) return false; for(var i = 0; i < arr.length; i++){ if(arr[i] !== null) return true; } return false; }
+function countIn(arr, N){ var c = 0; if(!arr) return 0; for(var i = 0; i < N; i++){ if(arr[i] !== null && arr[i] !== undefined) c++; } return c; }
+// Horas que alcanza el modelo (índice de la última hora con temperatura + 1), para el lugar elegido.
+function horizon(m){
+  var T = ser(m, 'temperature_2m'), last = -1;
+  if(!T) return 0;
+  for(var i = 0; i < T.length; i++){ if(T[i] !== null) last = i; }
+  return last + 1;
+}
+function winLen(){ return Math.min(state.win, MASTER.length); }
+function sliceStats(arr, N){
+  var mn = null, mx = null, sum = 0, cnt = 0;
+  for(var i = 0; i < N; i++){
+    var v = arr ? arr[i] : null;
+    if(v === null || v === undefined) continue;
+    cnt++; sum += v;
+    if(mn === null || v < mn) mn = v;
+    if(mx === null || v > mx) mx = v;
+  }
+  return {min:mn, max:mx, sum:sum, n:cnt};
+}
+// Nubosidad total: la del modelo, o (AROME 1,5 km) una estimación con la capa más cubierta de cada hora.
+function cloudTotal(m){
+  var v = ser(m, 'cloud_cover');
+  if(v && hasData(v)) return {v:v, est:false};
+  var lo = ser(m, 'cloud_cover_low'), mi = ser(m, 'cloud_cover_mid'), hi = ser(m, 'cloud_cover_high');
+  if(lo && mi && hi && hasData(lo) && hasData(mi) && hasData(hi)){
+    return {v:lo.map(function(x, i){ return (x === null || mi[i] === null || hi[i] === null) ? null : Math.max(x, mi[i], hi[i]); }), est:true};
+  }
+  return null;
+}
+function modelStats(model){
+  if(!model.ok) return null;
+  var N = winLen();
+  var Pa = ser(model, 'precipitation');
+  var T = sliceStats(ser(model, 'temperature_2m'), N), P = sliceStats(Pa, N);
+  var G = sliceStats(ser(model, 'wind_gusts_10m'), N), W = sliceStats(ser(model, 'wind_speed_10m'), N);
+  var rh = 0, i;
+  for(i = 0; i < N; i++){ if(Pa && Pa[i] !== null && Pa[i] >= RAIN_MIN) rh++; }
+  var ct = cloudTotal(model), C = ct ? sliceStats(ct.v, N) : null, SU = sliceStats(ser(model, 'sunshine_duration'), N);
+  return {tmin:T.min, tmax:T.max, hours:T.n, precip:P.n ? P.sum : null, pn:P.n, rainH:rh, gust:G.max, wind:W.max,
+          cloud:(C && C.n) ? C.sum / C.n : null, cloudEst:!!(ct && ct.est), sun:SU.n ? SU.sum / 3600 : null, sunN:SU.n};
+}
+function visibleModels(){ return MODELS.filter(function(m){ return m.ok && state.vis[m.id]; }); }
+
+// Modelo de referencia. "Automático": el más detallado (AROME, luego ICON-EU, luego IFS) que cubre al menos el 75 % de la ventana elegida;
+// si ninguno la cubre, el que más horas cubre.
+function refModel(){
+  if(state.ref !== 'auto'){
+    var m0 = MODEL_BY_ID[state.ref];
+    if(m0 && m0.ok) return m0;
+  }
+  var N = winLen(), order = ['arome_hd', 'arome', 'icon', 'ifs'], best = null, bc = -1;
+  for(var i = 0; i < order.length; i++){
+    var m = MODEL_BY_ID[order[i]];
+    if(!m || !m.ok) continue;
+    var c = countIn(ser(m, 'temperature_2m'), N);
+    if(N && c >= REF_COVER * N) return m;
+    if(c > bc){ bc = c; best = m; }
+  }
+  return best;
+}
+// Modelo con datos de esa variable que mejor cubre la ventana: primero la referencia y su hermano AROME, luego los visibles y por último cualquiera.
+function pickModel(name){
+  var rf = refModel(), sib = rf && rf.id === 'arome_hd' ? MODEL_BY_ID.arome : rf && rf.id === 'arome' ? MODEL_BY_ID.arome_hd : null;
+  var cand = [rf, sib].concat(visibleModels(), MODELS.filter(function(m){ return m.ok; })), N = winLen(), best = null, bc = 0, seen = {};
+  for(var i = 0; i < cand.length; i++){
+    var m = cand[i];
+    if(!m || !m.ok || seen[m.id]) continue;
+    seen[m.id] = 1;
+    var arr = name === 'cloud_cover' ? (cloudTotal(m) || {}).v : ser(m, name);
+    var c = countIn(arr, N);
+    if(c && N && c >= REF_COVER * N) return m;
+    if(c > bc){ bc = c; best = m; }
+  }
+  return best;
+}
+function placeGrid(m){
+  var gs = m.grids;
+  return gs && gs.length ? gs[Math.min(placeIndex(), gs.length - 1)] : null;
+}
+
+/* Resumen por días */
+function dayGroups(){
+  var out = [], cur = null;
+  for(var i = 0; i < MASTER.length; i++){
+    var key = MASTER[i].slice(0, 10);
+    if(!cur || cur.key !== key){ cur = {key:key, idx:[], first:i}; out.push(cur); }
+    cur.idx.push(i);
+  }
+  return out.filter(function(g){ return g.idx.length >= 6; });   // un día suelto de una o dos horas no merece fila
+}
+// Valor de un modelo en un día, o null si no cubre al menos el 90 % de las horas de ese día.
+function dayValue(m, k, idxs){
+  var arr = k === 'rain' ? ser(m, 'precipitation') : (k === 'tmax' || k === 'tmin') ? ser(m, 'temperature_2m') : k === 'gust' ? ser(m, 'wind_gusts_10m')
+          : k === 'cloud' ? (cloudTotal(m) || {}).v : ser(m, 'sunshine_duration');
+  if(!arr) return null;
+  var n = 0, sum = 0, mn = null, mx = null;
+  idxs.forEach(function(i){
+    var v = arr[i]; if(v === null || v === undefined) return;
+    n++; sum += v; if(mn === null || v < mn) mn = v; if(mx === null || v > mx) mx = v;
+  });
+  if(!n || n < COVER_MIN * idxs.length) return null;
+  return k === 'rain' ? sum : k === 'tmin' ? mn : (k === 'tmax' || k === 'gust') ? mx : k === 'cloud' ? sum / n : sum / 3600;
+}
+function modelHasVar(m, k){
+  var arr = k === 'rain' ? ser(m, 'precipitation') : (k === 'tmax' || k === 'tmin') ? ser(m, 'temperature_2m') : k === 'gust' ? ser(m, 'wind_gusts_10m')
+          : k === 'cloud' ? (cloudTotal(m) || {}).v : ser(m, 'sunshine_duration');
+  return hasData(arr);
+}
+// Modelos que salen como columna: los visibles; y, para nubes y sol, AROME 2,5 km si el de 1,5 km (visible) no trae esa variable.
+function dailyModels(k){
+  var list = visibleModels();
+  if((k === 'cloud' || k === 'sun') && !state.vis.arome && state.vis.arome_hd){
+    var a = MODEL_BY_ID.arome, h = MODEL_BY_ID.arome_hd;
+    if(a && a.ok && modelHasVar(a, k) && !(h && h.ok && modelHasVar(h, k))){
+      var out = [], added = false;
+      MODELS.forEach(function(m){ if(m.id === 'arome'){ out.push(m); added = true; } else if(list.indexOf(m) >= 0) out.push(m); });
+      return added ? out : list;
+    }
+  }
+  return list;
+}
+// Acuerdo de lluvia por hora: porcentaje de los modelos visibles con datos que dan al menos RAIN_MIN mm.
+function rainAgreement(N){
+  var vm = visibleModels(), out = [], arrs = vm.map(function(m){ return ser(m, 'precipitation'); });
+  for(var i = 0; i < N; i++){
+    var n = 0, k = 0;
+    arrs.forEach(function(a){ if(a && a[i] !== null && a[i] !== undefined){ n++; if(a[i] >= RAIN_MIN) k++; } });
+    out.push(n ? {pct:k / n * 100, k:k, n:n} : null);
+  }
+  return out;
+}
+var TIDE_DEF = {   // velocidad (°/h), coeficientes de Doodson (τ,s,h,p,−N,p′,90°) y correcciones nodales [onda base, factor]
+  'M2':[28.9841042,[2,0,0,0,0,0,0],[['M2',1]]],
+  'N2':[28.4397295,[2,-1,0,1,0,0,0],[['M2',1]]],
+  'S2':[30,[2,2,-2,0,0,0,0],[]],
+  'K2':[30.0821373,[2,2,0,0,0,0,0],[['K2',1]]],
+  '2N2':[27.8953548,[2,-2,0,2,0,0,0],[['M2',1]]],
+  'S1':[15,[1,1,-1,0,0,0,0],[]],
+  'K1':[15.0410686,[1,1,0,0,0,0,-1],[['K1',1]]],
+  'P1':[14.9589314,[1,1,-2,0,0,0,1],[]],
+  'O1':[13.9430356,[1,-1,0,0,0,0,1],[['O1',1]]],
+  'Q1':[13.3986609,[1,-2,0,1,0,0,1],[['O1',1]]],
+  'M1':[14.4966939,[1,0,0,1,0,0,-1],[['M1',1]]],
+  'M4':[57.9682085,[4,0,0,0,0,0,0],[['M2',2]]],
+  'MM':[0.5443747,[0,1,0,-1,0,0,0],[['Mm',1]]],
+  'MF':[1.098033,[0,2,0,0,0,0,0],[['Mf',1]]],
+  'SA':[0.0410686,[0,0,1,0,0,0,0],[]],
+  'SSA':[0.0821373,[0,0,2,0,0,0,0],[]],
+  'T2':[29.9589333,[2,2,-3,0,0,1,0],[]],
+  'J1':[15.5854433,[1,2,0,-1,0,0,-1],[['J1',1]]],
+  'L2':[29.5284789,[2,1,0,-1,0,0,-2],[['L2',1]]],
+  'R2':[30.0410667,[2,2,-1,0,0,-1,-2],[]],
+  '2Q1':[12.8542862,[1,-3,0,2,0,0,1],[['O1',1]]],
+  'MSF':[1.0158958,[0,2,-2,0,0,0,0],[['M2',-1]]],
+  'MSQM':[2.1139287,[0,4,-2,0,0,0,0],[['M2',-1]]],
+  'EP2':[27.4238338,[2,-3,2,1,0,0,0],[['M2',1]]],
+  'M3':[43.4761564,[3,0,0,0,0,0,-2],[['M3',1]]],
+  'MU2':[27.9682085,[2,-2,2,0,0,0,0],[['M2',1]]],
+  'MTM':[1.6424078,[0,3,0,-1,0,0,0],[['Mm',1]]],
+  'NU2':[28.5125832,[2,-1,2,-1,0,0,0],[['M2',1]]],
+  'LAMBDA2':[29.4556253,[2,1,-2,1,0,0,-2],[['M2',1]]],
+  'MN4':[57.4238338,[4,-1,0,1,0,0,0],[['M2',1],['M2',1]]],
+  'MS4':[58.9841042,[4,2,-2,0,0,0,0],[['M2',1]]],
+  'MKS2':[29.0662415,[2,0,2,0,0,0,0],[['M2',1],['K2',1]]],
+  'N4':[56.8794591,[4,-2,0,2,0,0,0],[['M2',2]]],
+  'M6':[86.9523127,[6,0,0,0,0,0,0],[['M2',3]]],
+  'M8':[115.936417,[8,0,0,0,0,0,0],[['M2',4]]],
+  'S4':[60,[4,4,-4,0,0,0,0],[]],
+  'OO1':[16.1391017,[1,3,0,0,0,0,-1],[['K2',1],['O1',-1]]],
+  'S3':[45,[3,3,-3,0,0,0,-2],[]],
+  'MA2':[28.943036,[2,0,-1,0,0,0,0],[]],
+  'MB2':[29.025173,[2,0,1,0,0,0,0],[]],
+  'T3':[44.9589333,[3,3,-4,0,0,0,0],[]],
+  'R3':[45.0410686,[3,3,-2,0,0,0,-1],[['K1',1]]],
+  'RHO1':[13.4715145,[1,-2,2,-1,0,0,1],[['O1',1]]],
+  'SGM':[12.9271398,[1,-3,2,0,0,0,1],[['O1',1]]],
+  '3L2':[29.5331208,[2,1,0,0,0,0,0],[['L2',1]]],
+  '3N2':[28.4350877,[2,-1,0,0,0,0,1],[['M2',1]]],
+  '2SM2':[31.0158958,[2,4,-4,0,0,0,0],[['M2',-1]]],
+  '2MS6':[87.9682085,[6,2,-2,0,0,0,0],[['M2',2]]],
+  '2MK5':[73.009277,[5,1,0,0,0,0,-1],[['M2',2],['K1',1]]],
+  '2MO5':[71.911244,[5,-1,0,0,0,0,1],[['M2',2],['O1',1]]]
+};
+var TIDE_SAN = {   // Santander: amplitud (m) y fase (° respecto a UTC)
+  'M2':[1.31804,94.437],
+  'N2':[0.27724,75.253],
+  'S2':[0.45717,127.432],
+  'K2':[0.1293,124.745],
+  '2N2':[0.03908,56.444],
+  'S1':[0.00425,2.541],
+  'K1':[0.06457,71.067],
+  'P1':[0.02029,58.719],
+  'O1':[0.06977,323.365],
+  'Q1':[0.02203,275.905],
+  'M1':[0.0017,311.459],
+  'M4':[0.02393,329.078],
+  'MM':[0.00383,260.259],
+  'MF':[0.00663,197.682],
+  'SA':[0.05151,222.08],
+  'SSA':[0.02807,89.621],
+  'T2':[0.02598,121.694],
+  'J1':[0.00197,111.905],
+  'L2':[0.03285,105.075],
+  'R2':[0.00491,135.654],
+  '2Q1':[0.00405,229.455],
+  'MSF':[0.00388,148.66],
+  'MSQM':[0.00118,322.225],
+  'EP2':[0.01008,37.572],
+  'M3':[0.01299,150.992],
+  'MU2':[0.04477,59.464],
+  'MTM':[0.00162,206.175],
+  'NU2':[0.05269,77.017],
+  'LAMBDA2':[0.00913,88.96],
+  'MN4':[0.01236,283.592],
+  'MS4':[0.00743,41.521],
+  'MKS2':[0.00324,82.118],
+  'N4':[0.00332,230.769],
+  'M6':[0.00679,174.632],
+  'M8':[0.00027,291.917],
+  'S4':[0.0003,152.46],
+  'OO1':[0.00116,214.784],
+  'S3':[0.00116,292.74],
+  'MA2':[0.00275,21.055],
+  'MB2':[0.00517,108.98],
+  'T3':[0.00363,299.428],
+  'R3':[0.00404,35.561],
+  'RHO1':[0.00394,282.183],
+  'SGM':[0.00407,240.897],
+  '3L2':[0.00582,356.643],
+  '3N2':[0.00126,122.14],
+  '2SM2':[0.00262,297.708],
+  '2MS6':[0.00685,219.285],
+  '2MK5':[0.00061,135.485],
+  '2MO5':[0.00072,50.757]
+};
+var TIDE_BRE = {   // Brest, solo ondas semidiurnas (para el coeficiente)
+  'M2':[2.0511,108.993],
+  'N2':[0.41694,90.618],
+  'S2':[0.74891,148.282],
+  'K2':[0.21368,145.89],
+  '2N2':[0.05703,72.807],
+  'T2':[0.04169,138.562],
+  'L2':[0.06387,102.92],
+  'R2':[0.00534,157.872],
+  'EP2':[0.01969,89.435],
+  'MU2':[0.08572,105.072],
+  'NU2':[0.07778,86.6],
+  'LAMBDA2':[0.02627,75.818],
+  'MKS2':[0.0076,174.815],
+  'MA2':[0.01102,39.45],
+  'MB2':[0.01244,101.15],
+  '3L2':[0.00825,6.721],
+  '3N2':[0.00217,308.506],
+  '2SM2':[0.01731,312.051]
+};
+var TIDE_BRE_NAMES = ['M2','N2','S2','K2','2N2','T2','L2','R2','EP2','MU2','NU2','LAMBDA2','MKS2','MA2','MB2','3L2','3N2','2SM2'];
+var TIDE_SAN_NAMES = ['M2','N2','S2','K2','2N2','S1','K1','P1','O1','Q1','M1','M4','MM','MF','SA','SSA','T2','J1','L2','R2','2Q1','MSF','MSQM','EP2','M3','MU2','MTM','NU2','LAMBDA2','MN4','MS4','MKS2','N4','M6','M8','S4','OO1','S3','MA2','MB2','T3','R3','RHO1','SGM','3L2','3N2','2SM2','2MS6','2MK5','2MO5'];
+
+
+/* ================= Mareas ================= */
+/* Predicción armónica propia, sin conexión: suma de ondas con las constantes del mareógrafo de Santander (TICON-4,
+   GESLA-4) y correcciones nodales IHO. Es la misma fórmula que usan las tablas de mareas; no incluye el efecto
+   del tiempo (presión, viento, oleaje). El coeficiente sigue la definición del SHOM: marnage semidiurno de
+   Brest dividido por 6,10 m (por 100), con las constantes de Brest. */
+var TIDE = {
+  place:'Santander',
+  ref:'Santander',
+  lat:43.461, lon:-3.791,        // mareógrafo de Santander (TICON-4)
+  consts:TIDE_SAN, names:TIDE_SAN_NAMES,
+  datum:2.42,        // m entre el nivel medio y el cero de las tablas de Santander (contrastado con las tablas publicadas de nov. y oct. 2026)
+  unit:3.05          // semi-marnage (m) que corresponde a coeficiente 100
+};
+var D2R = Math.PI / 180;
+var ASTRO_POLY = {
+  s:[218.3164591, 481267.88134236, -0.0013268, 1 / 538841 - 1 / 65194000],
+  h:[280.46645, 36000.76983, 0.0003032],
+  p:[83.353243, 4069.0137111, -0.0103238, -1 / 80053, 1 / 18999000],
+  N:[125.044555, -1934.1361849, 0.0020762, 1 / 467410, -1 / 60616000],
+  pp:[280.46645 - 357.5291, 36000.76932 - 35999.0503, 0.0003032 + 0.0001559, 0.00000048]
+};
+function polyAt(c, T){ var r = 0, p = 1; for(var i = 0; i < c.length; i++){ r += c[i] * p; p *= T; } return r; }
+function mod360(x){ return ((x % 360) + 360) % 360; }
+function astroAt(ms){
+  var jd = ms / 86400000 + 2440587.5, T = (jd - 2451545) / 36525;
+  var a = {s:mod360(polyAt(ASTRO_POLY.s, T)), h:mod360(polyAt(ASTRO_POLY.h, T)), p:mod360(polyAt(ASTRO_POLY.p, T)),
+           N:mod360(polyAt(ASTRO_POLY.N, T)), pp:mod360(polyAt(ASTRO_POLY.pp, T))};
+  a.tau = (jd - Math.floor(jd)) * 360 + a.h - a.s;
+  return a;
+}
+// Correcciones nodales (IHO): f = factor de amplitud, u = adelanto de fase en grados.
+function sinCos(fs, fc){ return {f:Math.sqrt(fs * fs + fc * fc), u:Math.atan2(fs, fc) / D2R}; }
+var TIDE_FUND = {
+  M2:function(a){ var N = a.N * D2R; return {f:1.0007 - 0.0373 * Math.cos(N) + 0.0002 * Math.cos(2 * N), u:-2.14 * Math.sin(N)}; },
+  K2:function(a){ var N = a.N * D2R; return {f:1.0246 + 0.2863 * Math.cos(N) + 0.0083 * Math.cos(2 * N) - 0.0015 * Math.cos(3 * N),
+                                         u:-17.74 * Math.sin(N) + 0.68 * Math.sin(2 * N) - 0.04 * Math.sin(3 * N)}; },
+  K1:function(a){ var N = a.N * D2R; return {f:1.006 + 0.115 * Math.cos(N) - 0.0088 * Math.cos(2 * N) + 0.0006 * Math.cos(3 * N),
+                                         u:-8.86 * Math.sin(N) + 0.68 * Math.sin(2 * N) - 0.07 * Math.sin(3 * N)}; },
+  O1:function(a){ var N = a.N * D2R; return {f:1.0176 + 0.1871 * Math.cos(N) - 0.0147 * Math.cos(2 * N),
+                                         u:10.8 * Math.sin(N) - 1.34 * Math.sin(2 * N) + 0.19 * Math.sin(3 * N)}; },
+  J1:function(a){ var N = a.N * D2R; return {f:1.1029 + 0.1676 * Math.cos(N) - 0.017 * Math.cos(2 * N) + 0.0016 * Math.cos(3 * N),
+                                         u:-12.94 * Math.sin(N) + 1.34 * Math.sin(2 * N) - 0.19 * Math.sin(3 * N)}; },
+  Mm:function(a){ var N = a.N * D2R, p = a.p * D2R; return {f:1 - 0.1311 * Math.cos(N) + 0.0538 * Math.cos(2 * p) + 0.0205 * Math.cos(2 * p - N), u:0}; },
+  Mf:function(a){ var N = a.N * D2R; return {f:1.084 + 0.415 * Math.cos(N) + 0.039 * Math.cos(2 * N),
+                                         u:-23.7 * Math.sin(N) + 2.7 * Math.sin(2 * N) - 0.4 * Math.sin(3 * N)}; },
+  M3:function(a){ var N = a.N * D2R, m = TIDE_FUND.M2(a); return {f:Math.pow(Math.sqrt(m.f), 3), u:-3.21 * Math.sin(N)}; },
+  M1:function(a){ var N = a.N * D2R, p = a.p * D2R;
+                  return sinCos(Math.sin(p) + 0.2 * Math.sin(p - N), 2 * (Math.cos(p) + 0.2 * Math.cos(p - N))); },
+  L2:function(a){ var N = a.N * D2R, p = a.p * D2R;
+                  return sinCos(-0.2505 * Math.sin(2 * p) - 0.1102 * Math.sin(2 * p - N) - 0.0156 * Math.sin(2 * p - 2 * N) - 0.037 * Math.sin(N),
+                                1 - 0.2505 * Math.cos(2 * p) - 0.1102 * Math.cos(2 * p - N) - 0.0156 * Math.cos(2 * p - 2 * N) - 0.037 * Math.cos(N)); }
+};
+// Parámetros {A, w, phi} de cada onda para el tramo que empieza en t0 (ms UTC): el nivel es la suma de A·cos(w·h + phi), con h en horas desde t0.
+function tideParams(consts, names, t0){
+  var a0 = astroAt(t0), am = astroAt(t0 + 12 * 3600000), fc = {};
+  var V = [a0.tau, a0.s, a0.h, a0.p, -a0.N, a0.pp, 90], out = [];
+  names.forEach(function(n){
+    var d = TIDE_DEF[n], c = d[1], v0 = 0, f = 1, u = 0, i;
+    for(i = 0; i < 7; i++) v0 += c[i] * V[i];
+    d[2].forEach(function(e){
+      var r = fc[e[0]] || (fc[e[0]] = TIDE_FUND[e[0]](am));
+      u += e[1] * r.u; f *= Math.pow(r.f, Math.abs(e[1]));
+    });
+    out.push({A:consts[n][0] * f, w:d[0] * D2R, phi:(v0 + u - consts[n][1]) * D2R});
+  });
+  return out;
+}
+var TIDE_CACHE = {};
+function tideChunk(day){            // día UTC (número de días desde 1970)
+  var P = TIDE_CACHE[day];
+  if(!P){
+    if(Object.keys(TIDE_CACHE).length > 40) TIDE_CACHE = {};
+    P = TIDE_CACHE[day] = tideParams(TIDE.consts, TIDE.names, day * 86400000);
+  }
+  return P;
+}
+// Altura (m sobre el nivel medio) y su derivada (m/h) en el instante ms.
+function tideLevel(ms){
+  var day = Math.floor(ms / 86400000), P = tideChunk(day), h = (ms - day * 86400000) / 3600000, s = 0;
+  for(var i = 0; i < P.length; i++) s += P[i].A * Math.cos(P[i].w * h + P[i].phi);
+  return s;
+}
+function tideSlope(ms){
+  var day = Math.floor(ms / 86400000), P = tideChunk(day), h = (ms - day * 86400000) / 3600000, s = 0;
+  for(var i = 0; i < P.length; i++) s -= P[i].A * P[i].w * Math.sin(P[i].w * h + P[i].phi);
+  return s;
+}
+// Pleamares y bajamares entre from y to (ms). Busca cambios de signo de la pendiente cada 10 min y afina por bisección.
+function tideExtremes(from, to){
+  var STEP = 600000, ex = [], t = from, d0 = tideSlope(t), d1, lo, hi, mid, dm, k;
+  for(; t < to; t += STEP){
+    d1 = tideSlope(t + STEP);
+    if((d0 > 0 && d1 <= 0) || (d0 < 0 && d1 >= 0)){
+      lo = t; hi = t + STEP;
+      for(k = 0; k < 24; k++){ mid = (lo + hi) / 2; dm = tideSlope(mid); if((dm > 0) === (d0 > 0)) lo = mid; else hi = mid; }
+      mid = (lo + hi) / 2;
+      ex.push({t:mid, h:tideLevel(mid), high:d0 > 0});
+    }
+    d0 = d1;
+  }
+  // un par de extremos que difiere menos de 1 cm es una oscilación falsa, no una marea
+  var changed = true;
+  while(changed){
+    changed = false;
+    for(k = 0; k + 1 < ex.length; k++){
+      if(Math.abs(ex[k].h - ex[k + 1].h) < 0.01){ ex.splice(k, 2); changed = true; break; }
+    }
+  }
+  return ex;
+}
+// Coeficiente de marea (SHOM): 100 × semi-marnage semidiurno de Brest / 3,05 m, con todas las ondas de la especie 2.
+function tideCoef(ms){
+  var P = tideParams(TIDE_BRE, TIDE_BRE_NAMES, ms), re = 0, im = 0;
+  P.forEach(function(q){ re += q.A * Math.cos(q.phi); im += q.A * Math.sin(q.phi); });
+  return 100 * Math.hypot(re, im) / TIDE.unit;
+}
+function coefWord(c){ return c <= 45 ? 'muerta' : c <= 70 ? 'media' : c <= 95 ? 'viva' : 'muy viva'; }
+
+/* ---- Hora local de Madrid (con el cambio de hora) ---- */
+var TZF = null;
+function tzParts(ms){
+  var o = {};
+  try{
+    if(!TZF) TZF = new Intl.DateTimeFormat('en-GB', {timeZone:CONFIG.tz, hourCycle:'h23', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+    TZF.formatToParts(new Date(ms)).forEach(function(p){ o[p.type] = +p.value; });
+    return {y:o.year, mo:o.month - 1, d:o.day, h:o.hour % 24, mi:o.minute};
+  }catch(e){
+    var d = new Date(ms);
+    return {y:d.getFullYear(), mo:d.getMonth(), d:d.getDate(), h:d.getHours(), mi:d.getMinutes()};
+  }
+}
+function tzOffset(ms){ var q = tzParts(ms); return Date.UTC(q.y, q.mo, q.d, q.h, q.mi) - Math.floor(ms / 60000) * 60000; }
+function localToMs(y, mo, d, h, mi){
+  var g = Date.UTC(y, mo, d, h, mi || 0), ms = g - tzOffset(g), o2 = tzOffset(ms);
+  if(o2 !== g - ms) ms = g - o2;
+  return ms;
+}
+function localIso(ms){ var q = tzParts(ms); return q.y + '-' + pad(q.mo + 1) + '-' + pad(q.d) + 'T' + pad(q.h) + ':' + pad(q.mi); }
+function clockOf(ms){ var q = tzParts(ms); return pad(q.h) + ':' + pad(q.mi); }
+function dowOf(q){ return new Date(q.y, q.mo, q.d).getDay(); }
+
+/* ================= Gráficos ================= */
+var DOW1 = ['D','L','M','X','J','V','S'];
+// Marcas del eje: el día a las 00:00 y, si caben, horas intermedias (cada 3, 6 o 12 h). Con 5 o 7 días solo los días.
+function xTickList(times, N, pw){
+  var out = [], gph = pw / Math.max(1, N - 1), pxDay = 24 * gph, step = 0, i;
+  [3, 6, 12].forEach(function(s){ if(!step && s * gph >= 30) step = s; });
+  var unit = step && step * gph >= 44 ? ' h' : 'h';
+  var short = pxDay < 46, labelW = short ? 26 : 40;
+  function dl(t){ return (short ? DOW1[t.dow] : DOW[t.dow]) + ' ' + t.d; }
+  if(!N) return out;
+  var t0 = parseT(times[0]);
+  // El primer día empieza a mitad de día: se etiqueta en el borde izquierdo si hay sitio hasta la medianoche.
+  var edge = t0.h !== 0 && (24 - t0.h) * gph >= labelW + 4;
+  if(edge) out.push({i:0, label:dl(t0), major:true});
+  for(i = 0; i < N; i++){
+    var t = parseT(times[i]);
+    if(t.h === 0){ out.push({i:i, label:dl(t), major:true}); continue; }
+    if(!step || t.h % step !== 0) continue;
+    var back = (i - t.h >= 0) ? t.h * gph : (edge ? i * gph : 1e9);   // distancia a la etiqueta de día anterior
+    if(back < labelW + 8) continue;
+    if(i + (24 - t.h) < N && (24 - t.h) * gph < 16) continue;         // demasiado cerca de la siguiente medianoche
+    out.push({i:i, label:t.h + unit, major:false});
+  }
+  return out;
+}
+function attachHover(host, svg, g, rowsFor){
+  var tip = H('div', {'class':'tip'}, null, host);
+  tip.hidden = true;
+  var cross = S('line', {'class':'cross', y1:g.t, y2:g.t + g.ph}, svg);
+  cross.style.display = 'none';
+  var hit = S('rect', {x:g.l, y:g.t, width:g.pw, height:g.ph, fill:'transparent'}, svg);
+  function idxAt(cx){
+    var r = svg.getBoundingClientRect();
+    var x = cx - r.left - g.l;
+    var i = g.centered ? Math.floor(x / g.pw * g.n) : Math.round(x / g.pw * (g.n - 1));
+    return clamp(i, 0, g.n - 1);
+  }
+  function show(e){
+    var i = idxAt(e.clientX), x = g.xOf(i), row = rowsFor(i);
+    if(!row){ hide(); return; }
+    cross.setAttribute('x1', x); cross.setAttribute('x2', x); cross.style.display = '';
+    clear(tip);
+    H('div', {'class':'t'}, row.title, tip);
+    row.items.forEach(function(it){
+      var r = H('div', {'class':'r'}, null, tip);
+      if(it.color){ var k = H('span', {'class':'key'}, null, r); k.style.background = it.color; }
+      H('span', {'class':'n'}, it.name, r);
+      H('span', {'class':'v'}, it.value, r);
+    });
+    tip.hidden = false;
+    var w = tip.offsetWidth, left = x + 12;
+    if(left + w > g.W - 4) left = x - 12 - w;
+    tip.style.left = Math.max(4, left) + 'px';
+    tip.style.top = (g.t + 4) + 'px';
+  }
+  function hide(){ tip.hidden = true; cross.style.display = 'none'; }
+  hit.addEventListener('pointermove', show);
+  hit.addEventListener('pointerdown', show);
+  hit.addEventListener('pointerleave', hide);
+  hit.addEventListener('pointercancel', hide);
+}
+function baseChart(host, opts){
+  var W = Math.max(260, host.clientWidth || 320), Hh = opts.height;
+  var m = {l:opts.left || 40, r:12, t:12, b:24 + (opts.arrows ? 22 : 0)};
+  var g = {W:W, l:m.l, t:m.t, pw:W - m.l - m.r, ph:Hh - m.t - m.b, n:opts.n, centered:!!opts.centered};
+  var svg = S('svg', {width:W, height:Hh, viewBox:'0 0 ' + W + ' ' + Hh, role:'img', 'aria-label':opts.aria}, null);
+  g.xOf = function(i){
+    return g.centered ? g.l + (i + 0.5) / g.n * g.pw : g.l + (g.n <= 1 ? 0 : i / (g.n - 1) * g.pw);
+  };
+  g.yOf = function(v){ return g.t + g.ph - (v - opts.y.min) / (opts.y.max - opts.y.min) * g.ph; };
+  // rejilla horizontal y etiquetas
+  opts.y.ticks.forEach(function(v){
+    var y = g.yOf(v);
+    S('line', {'class':(v === 0 && opts.zeroLine) ? 'zl' : 'gl', x1:g.l, x2:g.l + g.pw, y1:y, y2:y}, svg);
+    var tx = S('text', {'class':'ax', x:g.l - 6, y:y + 4, 'text-anchor':'end'}, svg);
+    tx.textContent = opts.yFmt ? opts.yFmt(v) : fmt(v, 0);
+  });
+  // días y horas
+  var ticks = xTickList(opts.times, opts.n, g.pw);
+  ticks.forEach(function(tk){
+    var x = g.xOf(tk.i);
+    if(tk.major && tk.i > 0) S('line', {'class':'gl', x1:x, x2:x, y1:g.t, y2:g.t + g.ph}, svg);
+    var tx = S('text', {'class':tk.major ? 'axm' : 'ax', x:x + (tk.major ? 3 : 0), y:Hh - 6, 'text-anchor':tk.major ? 'start' : 'middle'}, svg);
+    tx.textContent = tk.label;
+  });
+  host.appendChild(svg);
+  return {svg:svg, g:g};
+}
+function pathFor(vals, g){
+  var d = '', pen = false;
+  for(var i = 0; i < vals.length; i++){
+    if(vals[i] === null){ pen = false; continue; }
+    d += (pen ? 'L' : 'M') + g.xOf(i).toFixed(1) + ' ' + g.yOf(vals[i]).toFixed(1);
+    pen = true;
+  }
+  return d;
+}
+function endDot(svg, vals, g, color){
+  for(var i = vals.length - 1; i >= 0; i--){
+    if(vals[i] !== null){
+      var c = S('circle', {cx:g.xOf(i), cy:g.yOf(vals[i]), r:4.5, 'stroke-width':2}, svg);
+      c.style.fill = color; c.style.stroke = 'var(--surface)';
+      return;
+    }
+  }
+}
+function drawLines(svg, g, series){
+  series.forEach(function(s){
+    var p = S('path', {d:pathFor(s.vals, g), fill:'none', 'stroke-width':s.width || 2, 'stroke-linejoin':'round', 'stroke-linecap':'round'}, svg);
+    p.style.stroke = s.color;
+    if(s.opacity) p.style.opacity = s.opacity;
+    if(s.dash) p.setAttribute('stroke-dasharray', s.dash);
+    if(!s.noDot) endDot(svg, s.vals, g, s.color);
+  });
+}
+function extent(arrays, N, extra){
+  var mn = Infinity, mx = -Infinity;
+  arrays.forEach(function(a){
+    for(var i = 0; i < N; i++){ var v = a[i]; if(v !== null && v !== undefined){ if(v < mn) mn = v; if(v > mx) mx = v; } }
+  });
+  (extra || []).forEach(function(v){ if(v < mn) mn = v; if(v > mx) mx = v; });
+  return {min:mn, max:mx};
+}
+function emptyNote(host, text){ clear(host); H('p', {'class':'hint'}, text, host); }
+
+function renderTemp(){
+  var host = $('chT'); clear(host);
+  var N = winLen(), vm = visibleModels(), times = MASTER.slice(0, N), pl = place();
+  var g0 = vm.length ? placeGrid(vm[0]) : null;
+  $('tHint').textContent = 'Temperatura a 2 m en ' + pl.label + '. Open-Meteo ajusta la del modelo a la altura del punto' +
+    (g0 && isNum(g0.elev) ? ' (' + fmtK(g0.elev) + ' m según su relieve digital)' : '') + '. Con los modelos que no llegan, la línea simplemente termina.';
+  var list = vm.map(function(m){ return {m:m, vals:(ser(m, 'temperature_2m') || nullArr()).slice(0, N)}; })
+               .filter(function(s){ return hasData(s.vals); });
+  if(!list.length){ emptyNote(host, 'Sin datos de temperatura para los modelos visibles.'); return; }
+  var ex = extent(list.map(function(s){ return s.vals; }), N);
+  if(ex.min - 3 <= 0 && ex.max + 3 >= 0){ ex.min = Math.min(ex.min, 0); ex.max = Math.max(ex.max, 0); }
+  var y = niceScale(ex.min, ex.max, 5);
+  var c = baseChart(host, {height:230, n:N, times:times, y:y, zeroLine:true, aria:'Temperatura por hora en ' + pl.label});
+  drawLines(c.svg, c.g, list.map(function(s){ return {vals:s.vals, color:s.m.color}; }));
+  attachHover(host, c.svg, c.g, function(i){
+    var items = list.map(function(s){ return {color:s.m.color, name:s.m.name, value:s.vals[i] === null ? '–' : fmt(s.vals[i], 1) + ' °C'}; });
+    return {title:fmtHour(times[i]), items:items};
+  });
+}
+
+/* ===== Precipitación ===== */
+function renderPrecip(){
+  var host = $('chP'), hc = $('chPc'); clear(host); clear(hc);
+  var N = winLen(), vm = visibleModels(), times = MASTER.slice(0, N);
+  $('pHint').textContent = 'Lluvia (agua) en mm por hora, con la misma escala en todos los modelos. Las barras muy bajas son llovizna. En ' + place().label + '.';
+  var list = vm.map(function(m){ return {m:m, p:(ser(m, 'precipitation') || nullArr())}; }).filter(function(s){ return hasData(s.p); });
+  if(!list.length){ emptyNote(host, 'Sin datos de precipitación para los modelos visibles.'); return; }
+
+  // Franja de acuerdo: cuántos modelos dan lluvia en cada hora
+  if(list.length >= 2){
+    var ag = rainAgreement(N);
+    var arow = [{label:'Modelos con lluvia (≥ 0,1 mm/h)', color:null, fill:'var(--rain)', vals:ag.map(function(a){ return a ? a.pct : null; })}];
+    H('h3', {'class':'sub-h'}, 'Acuerdo entre modelos', hc);
+    var wa = H('div', {'class':'chart'}, null, hc);
+    var ca = rowsChart(wa, arow, {n:N, times:times, aria:'Acuerdo entre modelos sobre si llueve, por hora'});
+    attachHover(wa, ca.svg, ca.g, function(i){
+      var a = ag[i];
+      if(!a) return null;
+      var items = [{color:null, name:'Con lluvia', value:a.k + ' de ' + a.n + (a.n === 1 ? ' modelo' : ' modelos')}];
+      list.forEach(function(s){ items.push({color:s.m.color, name:s.m.name, value:s.p[i] === null ? '–' : fmtP(s.p[i]) + ' mm'}); });
+      return {title:fmtHour(times[i]), items:items};
+    });
+    H('p', {'class':'hint'}, 'Cada franja es una hora: cuanto más oscura, más modelos dan lluvia a la vez (blanco: ninguno).', hc);
+    H('h3', {'class':'sub-h'}, 'Cada modelo', hc);
+  }
+
+  var peak = 0;
+  list.forEach(function(s){ for(var i = 0; i < N; i++){ if(s.p[i] !== null && s.p[i] > peak) peak = s.p[i]; } });
+  var y = niceScale(0, Math.max(peak, 1), 3);
+  list.forEach(function(s){
+    var panel = H('div', {'class':'panel'}, null, host);
+    var st = sliceStats(s.p, N), rh = 0, i;
+    for(i = 0; i < N; i++){ if(s.p[i] !== null && s.p[i] >= RAIN_MIN) rh++; }
+    var head = H('div', {'class':'ph'}, null, panel);
+    var key = H('span', {'class':'key'}, null, head); key.style.background = s.m.color;
+    H('b', null, s.m.name, head);
+    H('span', {'class':'tot'}, (st.n < N ? '≥ ' : '') + fmt(st.sum, st.sum < 10 ? 1 : 0) + ' mm · ' + plural(rh, 'hora', 'horas') + ' con lluvia' + (st.n < N ? ' · llega a ' + st.n + ' de ' + N + ' h' : ''), head);
+    var wrap = H('div', {'class':'chart'}, null, panel);
+    var c = baseChart(wrap, {height:116, n:N, times:times, y:y, centered:true, left:36, yFmt:function(v){ return fmt(v, v % 1 ? 1 : 0); },
+                             aria:'Lluvia por hora, ' + s.m.name});
+    var g = c.g, slot = g.pw / N, bw = Math.min(24, Math.max(1.6, slot - 2));
+    for(i = 0; i < N; i++){
+      var p = s.p[i];
+      if(p === null || p <= 0) continue;
+      var hr = p / (y.max - y.min) * g.ph;
+      if(p >= RAIN_MIN) hr = Math.max(hr, 1.2);       // la llovizna sigue viéndose
+      else if(hr < 0.3) continue;
+      var r = S('rect', {x:g.xOf(i) - bw / 2, y:g.t + g.ph - hr, width:bw, height:hr, rx:Math.min(2, bw / 2)}, c.svg);
+      r.style.fill = 'var(--rain)';
+    }
+    attachHover(wrap, c.svg, g, function(i){
+      var p = s.p[i];
+      if(p === null) return null;
+      return {title:s.m.name + ' · ' + fmtHour(times[i]), items:[{color:'var(--rain)', name:'Lluvia', value:fmtP(p) + ' mm' + (p >= RAIN_MIN ? ' · ' + rainWord(p) : '')}]};
+    });
+  });
+}
+
+/* ===== Nubosidad y sol ===== */
+function skyWord(v){ return v < 20 ? 'despejado' : v < 50 ? 'poco nuboso' : v < 80 ? 'nuboso' : 'cubierto'; }
+// Franjas horarias (una fila por serie, del claro al oscuro según el porcentaje) sobre el eje común.
+function rowsChart(host, rows, opts){
+  var W = Math.max(260, host.clientWidth || 320), pitch = 30, strip = 14, left = 36, top = 4;
+  var Hh = top + rows.length * pitch + 24;
+  var g = {W:W, l:left, t:top, pw:W - left - 12, ph:rows.length * pitch, n:opts.n, centered:true};
+  g.xOf = function(i){ return g.l + (i + 0.5) / g.n * g.pw; };
+  var svg = S('svg', {width:W, height:Hh, viewBox:'0 0 ' + W + ' ' + Hh, role:'img', 'aria-label':opts.aria}, null);
+  var slot = g.pw / opts.n, ticks = xTickList(opts.times, opts.n, g.pw);
+  rows.forEach(function(r, k){
+    var y0 = g.t + k * pitch, sy = y0 + 13, first = -1, last = -1, i;
+    if(r.color){ var kk = S('rect', {x:g.l, y:y0 + 4, width:12, height:3, rx:1.5}, svg); kk.style.fill = r.color; }
+    var lb = S('text', {'class':'ax', x:g.l + (r.color ? 18 : 0), y:y0 + 9}, svg);
+    lb.textContent = r.label;
+    for(i = 0; i < opts.n; i++){ if(r.vals[i] !== null){ if(first < 0) first = i; last = i; } }
+    if(first < 0){
+      var nd0 = S('text', {'class':'ax', x:g.l, y:sy + 11}, svg); nd0.textContent = 'sin datos';
+      return;
+    }
+    var bg = S('rect', {x:g.l + first * slot, y:sy, width:(last - first + 1) * slot, height:strip}, svg);
+    bg.style.fill = 'var(--wash)';
+    var gap = slot > 6 ? 1 : 0;
+    for(i = first; i <= last; i++){
+      var v = r.vals[i];
+      if(v === null) continue;
+      var c = S('rect', {x:g.l + i * slot + gap / 2, y:sy, width:Math.max(1, slot - gap), height:strip}, svg);
+      c.style.fill = r.fill || 'var(--cloud)';
+      c.style.fillOpacity = (0.05 + 0.95 * clamp(v, 0, 100) / 100).toFixed(2);
+    }
+    ticks.forEach(function(tk){
+      if(tk.major && tk.i > 0 && tk.i > first && tk.i <= last){
+        var x = g.l + tk.i * slot;
+        S('line', {x1:x, x2:x, y1:sy, y2:sy + strip, 'stroke-width':2, stroke:'var(--surface)'}, svg);
+      }
+    });
+    if(last < opts.n - 1){
+      var nd = S('text', {'class':'ax', x:g.l + (last + 1) * slot + 6, y:sy + 11}, svg); nd.textContent = 'sin datos';
+    }
+  });
+  // etiquetas de día y hora abajo
+  ticks.forEach(function(tk){
+    var tx = S('text', {'class':tk.major ? 'axm' : 'ax', x:g.xOf(tk.i) + (tk.major ? 3 : 0), y:Hh - 6, 'text-anchor':tk.major ? 'start' : 'middle'}, svg);
+    tx.textContent = tk.label;
+  });
+  host.appendChild(svg);
+  return {svg:svg, g:g};
+}
+function renderSky(){
+  var host = $('chS'); clear(host);
+  var N = winLen(), vm = visibleModels(), times = MASTER.slice(0, N);
+  $('sHint').textContent = 'Cada franja es una hora: cuanto más oscura, más cubierto el cielo. Es la nubosidad del modelo sobre la celda de ' + place().label + '. Donde un modelo no llega pone «sin datos».';
+  var rows = [], missing = [], anyEst = false;
+  vm.forEach(function(m){
+    var ct = cloudTotal(m);
+    if(ct && ct.est) anyEst = true;
+    if(ct) rows.push({label:m.name + (ct.est ? ' (estimada)' : ''), color:m.color, vals:ct.v.slice(0, N)}); else missing.push(m.name);
+  });
+  H('h3', {'class':'sub-h'}, 'Nubosidad total', host);
+  if(rows.length){
+    var w1 = H('div', {'class':'chart'}, null, host);
+    var c1 = rowsChart(w1, rows, {n:N, times:times, aria:'Nubosidad total por hora y modelo'});
+    attachHover(w1, c1.svg, c1.g, function(i){
+      return {title:fmtHour(times[i]), items:rows.map(function(r){
+        var v = r.vals[i];
+        return {color:r.color, name:r.label, value:v === null ? '–' : fmt(v, 0) + ' % · ' + skyWord(v)};
+      })};
+    });
+    if(anyEst) H('p', {'class':'hint'}, 'Open-Meteo no da la nubosidad total de AROME 1,5 km: aquí es una estimación con la capa más cubierta de cada hora, y puede quedarse corta si las capas no se solapan.', host);
+    if(missing.length) H('p', {'class':'hint'}, missing.join(', ') + ': Open-Meteo no da nubosidad para este modelo.', host);
+  } else {
+    H('p', {'class':'hint'}, 'Ningún modelo visible trae nubosidad.', host);
+  }
+
+  var lm = pickModel('cloud_cover_low');
+  if(lm){
+    H('h3', {'class':'sub-h'}, 'Nubes por capas · ' + lm.name, host);
+    var layers = [['Bajas (hasta ~3 km)', 'cloud_cover_low'], ['Medias (~3–8 km)', 'cloud_cover_mid'], ['Altas (más de ~8 km)', 'cloud_cover_high']];
+    var lrows = layers.map(function(l){ return {label:l[0], color:null, vals:(ser(lm, l[1]) || nullArr()).slice(0, N)}; });
+    var w2 = H('div', {'class':'chart'}, null, host);
+    var c2 = rowsChart(w2, lrows, {n:N, times:times, aria:'Nubes bajas, medias y altas por hora, ' + lm.name});
+    attachHover(w2, c2.svg, c2.g, function(i){
+      return {title:fmtHour(times[i]), items:lrows.map(function(r){
+        var v = r.vals[i];
+        return {color:null, name:r.label, value:v === null ? '–' : fmt(v, 0) + ' %'};
+      })};
+    });
+    H('p', {'class':'hint'}, 'Las nubes bajas son las que traen el techo gris y la niebla; las altas suelen dejar un sol velado.', host);
+  }
+
+  var sm = pickModel('sunshine_duration');
+  if(sm){
+    var sv = ser(sm, 'sunshine_duration').slice(0, N).map(function(s){ return s === null ? null : s / 60; });
+    H('h3', {'class':'sub-h'}, 'Sol directo (minutos por hora) · ' + sm.name, host);
+    var w3 = H('div', {'class':'chart'}, null, host);
+    var c3 = baseChart(w3, {height:110, n:N, times:times, y:{min:0, max:60, ticks:[0, 30, 60]}, centered:true, left:36,
+                            aria:'Minutos de sol directo por hora, ' + sm.name});
+    var g3 = c3.g, slot3 = g3.pw / N, bw3 = Math.min(24, Math.max(1.6, slot3 - 2));
+    for(var i = 0; i < N; i++){
+      var sv1 = sv[i];
+      if(sv1 === null || sv1 <= 0.3) continue;
+      var bh = sv1 / 60 * g3.ph;
+      var rc = S('rect', {x:g3.xOf(i) - bw3 / 2, y:g3.t + g3.ph - bh, width:bw3, height:bh, rx:Math.min(2, bw3 / 2)}, c3.svg);
+      rc.style.fill = sm.color;
+    }
+    attachHover(w3, c3.svg, g3, function(i){
+      var v = sv[i];
+      if(v === null) return null;
+      return {title:fmtHour(times[i]), items:[{color:sm.color, name:'Sol directo', value:fmt(v, 0) + ' min'}]};
+    });
+    H('p', {'class':'hint'}, 'Sin barras: no hay sol directo (noche o cielo cubierto) o el modelo no llega.', host);
+  }
+}
+
+/* ===== Viento ===== */
+function arrowAt(svg, x, y, deg, color){
+  var gp = S('g', {transform:'translate(' + x.toFixed(1) + ',' + y + ') rotate(' + deg + ')'}, svg);
+  var p = S('path', {d:'M0,-6 L0,6 M-3.2,2.4 L0,6 L3.2,2.4', fill:'none', 'stroke-width':1.6, 'stroke-linecap':'round', 'stroke-linejoin':'round'}, gp);
+  p.style.stroke = color;
+}
+function renderWind(){
+  var host = $('chW'); clear(host);
+  var N = winLen(), vm = visibleModels(), times = MASTER.slice(0, N), rm = refModel();
+  $('wHint').textContent = 'Velocidad media por hora en km/h. La banda es la racha del modelo de referencia' +
+    (rm ? ' (' + rm.name + ')' : '') + '. Las flechas indican hacia dónde sopla el viento.';
+  var list = vm.map(function(m){ return {m:m, vals:(ser(m, 'wind_speed_10m') || nullArr()).slice(0, N)}; })
+               .filter(function(s){ return hasData(s.vals); });
+  var gust = rm ? (ser(rm, 'wind_gusts_10m') || nullArr()).slice(0, N) : null;
+  var dir = rm ? (ser(rm, 'wind_direction_10m') || nullArr()).slice(0, N) : null;
+  if(!list.length){ emptyNote(host, 'Sin datos de viento para los modelos visibles.'); return; }
+  var arrays = list.map(function(s){ return s.vals; });
+  if(gust && hasData(gust)) arrays.push(gust);
+  var ex = extent(arrays, N);
+  var y = niceScale(0, Math.max(ex.max, 10), 5);
+  var showArrows = !!(dir && hasData(dir));
+  var c = baseChart(host, {height:230 + (showArrows ? 22 : 0), n:N, times:times, y:y, arrows:showArrows, aria:'Viento por hora a 10 metros en ' + place().label});
+  var g = c.g;
+  var refSpeed = rm ? (ser(rm, 'wind_speed_10m') || nullArr()).slice(0, N) : null;
+  if(gust && refSpeed && hasData(gust)){
+    var top = '', bottom = [], started = false;
+    for(var i = 0; i < N; i++){
+      if(gust[i] === null || refSpeed[i] === null) continue;
+      top += (started ? 'L' : 'M') + g.xOf(i).toFixed(1) + ' ' + g.yOf(gust[i]).toFixed(1); started = true;
+      bottom.push(g.xOf(i).toFixed(1) + ' ' + g.yOf(refSpeed[i]).toFixed(1));
+    }
+    if(started){
+      var d = top; for(var k = bottom.length - 1; k >= 0; k--){ d += 'L' + bottom[k]; } d += 'Z';
+      var band = S('path', {d:d, stroke:'none'}, c.svg);
+      band.style.fill = rm.color; band.style.opacity = '0.16';
+    }
+  }
+  drawLines(c.svg, g, list.map(function(s){ return {vals:s.vals, color:s.m.color}; }));
+  if(showArrows){
+    var ay = g.t + g.ph + 14, perH = g.pw / Math.max(1, N - 1);
+    var astep = Math.max(3, Math.ceil(17 / perH / 3) * 3);        // una flecha cada 3 h, o más espaciadas si no caben
+    for(var j = 0; j < N; j += astep){
+      if(dir[j] !== null) arrowAt(c.svg, g.xOf(j), ay, dir[j] % 360, rm.color);
+    }
+  }
+  attachHover(host, c.svg, g, function(i){
+    var items = list.map(function(s){ return {color:s.m.color, name:s.m.name, value:s.vals[i] === null ? '–' : fmt(s.vals[i], 0) + ' km/h'}; });
+    if(gust && gust[i] !== null) items.push({color:null, name:'Racha (' + rm.name + ')', value:fmt(gust[i], 0) + ' km/h'});
+    if(dir && dir[i] !== null) items.push({color:null, name:'Procede del', value:cardinal(dir[i]) + ' (' + fmt(dir[i], 0) + '°)'});
+    return {title:fmtHour(times[i]), items:items};
+  });
+}
+
+/* ================= Resumen, tablas ================= */
+function tile(host, k, v, unit, sub){
+  var t = H('div', {'class':'tile'}, null, host);
+  H('div', {'class':'k'}, k, t);
+  var val = H('div', {'class':'v'}, v, t);
+  if(unit) H('small', null, unit, val);
+  H('div', {'class':'s'}, sub, t);
+}
+function covText(n, N){ return n < N ? ' · solo ' + n + ' de ' + N + ' h' : ''; }
+function renderTiles(){
+  var host = $('tiles'); clear(host);
+  var rm = refModel();
+  if(!rm){ return; }
+  var st = modelStats(rm), N = winLen(), win = state.win >= 120 ? (state.win / 24) + ' días' : state.win + ' h';
+  tile(host, 'Temperatura', st.tmin === null ? '–' : fmt(st.tmin, 0) + ' / ' + fmt(st.tmax, 0), '°C', 'mín / máx · ' + rm.name + covText(st.hours, N));
+  tile(host, 'Lluvia', fmt(st.precip, st.precip !== null && st.precip < 10 ? 1 : 0), 'mm', plural(st.rainH, 'hora', 'horas') + ' con lluvia · ' + win + covText(st.pn, N));
+  tile(host, 'Racha máxima', fmt(st.gust, 0), 'km/h', 'viento medio máx. ' + fmt(st.wind, 0) + ' km/h');
+  var cm = pickModel('cloud_cover');
+  if(cm){
+    var cs = modelStats(cm);
+    tile(host, 'Nubosidad media', cs.cloud === null ? '–' : fmt(cs.cloud, 0), '%', (cs.cloud === null ? '' : skyWord(cs.cloud) + ' · ') + cm.name + (cs.cloudEst ? ' (estimada)' : ''));
+  }
+  var sm = pickModel('sunshine_duration');
+  if(sm){
+    var ss = sliceStats(ser(sm, 'sunshine_duration'), N);
+    tile(host, 'Sol previsto', ss.n ? fmt(ss.sum / 3600, 0) : '–', 'h', 'en ' + ss.n + ' h con datos · ' + sm.name);
+  }
+}
+var SHORT = {arome_hd:'AROME 1,5', arome:'AROME 2,5', ifs:'IFS', icon:'ICON-EU'};
+function renderDaily(){
+  var tbl = $('daily'); clear(tbl);
+  var dv = DAILY_VARS.filter(function(v){ return v.k === state.dvar; })[0] || DAILY_VARS[0];
+  var groups = dayGroups(), ms = dailyModels(dv.k);
+  var reach = MODELS.filter(function(m){ return m.ok; }).map(function(m){ return m.name + ' ' + horizon(m) + ' h'; });
+  $('dHint').textContent = 'Un modelo solo aparece en un día si cubre al menos el 90 % de sus horas, así que los que no llegan se quedan en «–». ' +
+    (reach.length ? 'Alcance de cada modelo: ' + reach.join(' · ') + '. ' : '') + 'Rango: del valor más bajo al más alto entre modelos.' +
+    (dv.k === 'rain' ? ' El azul es más fuerte cuanta más lluvia.' : '');
+  var head = H('tr', null, null, H('thead', null, null, tbl));
+  H('th', null, 'Día', head);
+  ms.forEach(function(m){ var th = H('th', null, SHORT[m.id], head); th.style.borderBottom = '2px solid ' + m.color; });
+  H('th', null, 'Rango', head);
+  var body = H('tbody', null, null, tbl);
+  if(!groups.length || !ms.length){
+    var er = H('td', null, MASTER.length ? 'Ningún modelo visible tiene datos para esta variable.' : 'Sin datos todavía.', H('tr', null, null, body));
+    er.setAttribute('colspan', ms.length + 2); er.style.textAlign = 'left'; er.style.whiteSpace = 'normal'; er.style.color = 'var(--muted)';
+    return;
+  }
+  // «hoy» y «mañana» respecto al primer instante de la previsión (la hora actual), no a la primera fila que se muestra
+  var base = MASTER.length ? MASTER[0].slice(0, 10).split('-') : null;
+  function dayDiff(key){
+    var a = key.split('-');
+    return Math.round((Date.UTC(+a[0], +a[1] - 1, +a[2]) - Date.UTC(+base[0], +base[1] - 1, +base[2])) / 86400000);
+  }
+  groups.forEach(function(gp){
+    var tr = H('tr', null, null, body);
+    var dc = H('td', null, fmtDay(MASTER[gp.first]), tr), tags = [], df = dayDiff(gp.key);
+    if(df === 0) tags.push('hoy'); else if(df === 1) tags.push('mañana');
+    var h0 = parseT(MASTER[gp.idx[0]]).h, h1 = parseT(MASTER[gp.idx[gp.idx.length - 1]]).h;
+    if(h0 > 0) tags.push('desde las ' + h0 + ' h');
+    if(h1 < 23) tags.push('hasta las ' + h1 + ' h');
+    if(tags.length) H('small', null, tags.join(' · '), dc);
+    var vals = [];
+    ms.forEach(function(m){
+      var v = dayValue(m, dv.k, gp.idx), td = H('td', null, v === null ? '–' : fmt(v, dv.d), tr);
+      if(v === null) td.className = 'muted';
+      else if(dv.k === 'rain' && v >= 0.1) td.style.background = 'color-mix(in srgb, var(--rain) ' + Math.round(clamp(v / 25, 0, 1) * 45) + '%, transparent)';
+      if(v !== null) vals.push(v);
+    });
+    var rg = '–';
+    if(vals.length >= 2){
+      var a = Math.min.apply(null, vals), b = Math.max.apply(null, vals);
+      rg = fmt(a, dv.d) === fmt(b, dv.d) ? fmt(a, dv.d) : fmt(a, dv.d) + '–' + fmt(b, dv.d);
+    }
+    H('td', {'class':'rg'}, rg, tr);
+  });
+}
+function renderCompare(){
+  var tbl = $('cmp'); clear(tbl);
+  var N = winLen();
+  $('cmpHint').textContent = 'Ventana de ' + (state.win >= 120 ? (state.win / 24) + ' días' : state.win + ' h') + ' en ' + place().label + '. Bajo cada modelo, las horas de la ventana que llega a predecir; si no llega a todas, la lluvia (con «≥») solo cuenta esas horas. «≈» en nubes: estimada con las capas.';
+  var head = H('tr', null, null, H('thead', null, null, tbl));
+  ['Modelo · horas cubiertas', 'T mín °C', 'T máx °C', 'Lluvia mm', 'Racha km/h', 'Nubes %'].forEach(function(t){ H('th', null, t, head); });
+  var body = H('tbody', null, null, tbl);
+  MODELS.forEach(function(m){
+    var tr = H('tr', state.vis[m.id] ? null : {'class':'dim'}, null, body);
+    var td = H('td', null, null, tr), mk = H('span', {'class':'mk'}, null, td);
+    var k = H('span', {'class':'key'}, null, mk); k.style.background = m.color;
+    var nm = H('span', null, SHORT[m.id], mk); nm.title = m.name;
+    if(!m.ok){
+      var e = H('td', null, m.loading ? 'cargando…' : 'sin datos: ' + m.err, tr); e.setAttribute('colspan', 5); e.style.textAlign = 'left'; e.style.whiteSpace = 'normal'; e.style.color = m.loading ? 'var(--muted)' : 'var(--bad)';
+      return;
+    }
+    var s = modelStats(m);
+    var cv = H('small', null, s.hours + ' / ' + N + ' h', td); cv.style.whiteSpace = 'nowrap';
+    H('td', null, s.tmin === null ? '–' : fmt(s.tmin, 1), tr);
+    H('td', null, s.tmax === null ? '–' : fmt(s.tmax, 1), tr);
+    H('td', null, s.precip === null ? '–' : (s.pn < N ? '≥ ' : '') + fmt(s.precip, 1), tr);
+    H('td', null, s.gust === null ? '–' : fmt(s.gust, 0), tr);
+    H('td', null, s.cloud === null ? '–' : (s.cloudEst ? '≈ ' : '') + fmt(s.cloud, 0), tr);
+  });
+}
+function renderHourly(){
+  var tbl = $('hourly'); clear(tbl);
+  var rm = refModel(), N = winLen();
+  if(!rm){ return; }
+  var cm = pickModel('cloud_cover');
+  $('hHint').textContent = rm.name + ' en ' + place().label + '. Viento: la letra es de dónde sopla y la flecha hacia dónde va.' +
+    (cm && cm.id !== rm.id ? ' Las nubes son de ' + cm.name + '.' : '');
+  var head = H('tr', null, null, H('thead', null, null, tbl));
+  ['Hora', 'T °C', 'Lluvia mm', 'Viento km/h', 'Racha', 'Nubes'].forEach(function(t){ H('th', null, t, head); });
+  var body = H('tbody', null, null, tbl);
+  var T = ser(rm, 'temperature_2m'), P = ser(rm, 'precipitation'), W = ser(rm, 'wind_speed_10m'), D = ser(rm, 'wind_direction_10m');
+  var G = ser(rm, 'wind_gusts_10m'), CT = cm ? cloudTotal(cm) : null, C = CT ? CT.v : null, lastDay = '';
+  for(var i = 0; i < N; i++){
+    var t = parseT(MASTER[i]), dayKey = t.y + '-' + t.mo + '-' + t.d;
+    if(dayKey !== lastDay){
+      var dr = H('tr', {'class':'day'}, null, body), dc = H('td', null, fmtDay(MASTER[i]), dr);
+      dc.setAttribute('colspan', 6); lastDay = dayKey;
+    }
+    var tr = H('tr', null, null, body);
+    H('td', null, pad(t.h) + ':00', tr);
+    H('td', null, T ? fmt(T[i], 1) : '–', tr);
+    H('td', null, P ? fmtP(P[i]) : '–', tr);
+    var wtd = H('td', null, null, tr);
+    if(W && W[i] !== null){
+      wtd.textContent = fmt(W[i], 0) + ' ';
+      if(D && D[i] !== null){
+        var ar = H('span', {'aria-hidden':'true'}, '↓', wtd);
+        ar.style.display = 'inline-block'; ar.style.transform = 'rotate(' + (D[i] % 360) + 'deg)';
+        ar.style.margin = '0 3px';
+        H('span', {'class':'muted'}, cardinal(D[i]), wtd);
+      }
+    } else { wtd.textContent = '–'; }
+    H('td', null, G && G[i] !== null ? fmt(G[i], 0) : '–', tr);
+    H('td', null, C && C[i] !== null ? fmt(C[i], 0) + ' %' : '–', tr);
+  }
+}
+
+/* ===== Mareas: vista ===== */
+var TIDE_VIEW = {key:'', data:null};
+// Instante de inicio de la ventana: la primera hora de la previsión, o la hora actual si aún no hay datos meteorológicos.
+function tideStartMs(){
+  if(MASTER.length){ var t = parseT(MASTER[0]); return localToMs(t.y, t.mo, t.d, t.h, 0); }
+  return Math.floor(Date.now() / 3600000) * 3600000;
+}
+function tideView(){
+  var t0 = tideStartMs(), N = state.win, key = t0 + '|' + N;
+  if(TIDE_VIEW.key === key) return TIDE_VIEW.data;
+  var q0 = tzParts(t0), q1 = tzParts(t0 + N * 3600000 - 1);
+  var ds = localToMs(q0.y, q0.mo, q0.d, 0), de = localToMs(q1.y, q1.mo, q1.d + 1, 0);
+  var ex = tideExtremes(ds - 4 * 3600000, de + 4 * 3600000).filter(function(e){ return e.t >= ds && e.t < de; });
+  ex.forEach(function(e){ e.z = e.h + TIDE.datum; if(e.high) e.coef = tideCoef(e.t); });
+  var curve = [], k;
+  for(k = 0; k <= N * 6; k++) curve.push(tideLevel(t0 + k * 600000) + TIDE.datum);
+  var data = {t0:t0, N:N, ds:ds, de:de, ex:ex, curve:curve};
+  TIDE_VIEW = {key:key, data:data};
+  return data;
+}
+function etaText(ms, now){
+  var m = Math.max(0, Math.round((ms - now) / 60000)), h = Math.floor(m / 60);
+  return 'en ' + (h ? h + ' h ' + (m % 60) + ' min' : m + ' min');
+}
+function coefStyle(el, c){
+  el.style.background = 'color-mix(in srgb, var(--accent) ' + Math.round(8 + clamp((c - 20) / 100, 0, 1) * 52) + '%, transparent)';
+}
+// Tres tarjetas: próxima pleamar, próxima bajamar y coeficiente de hoy. Se calculan con la hora actual, no con la de la última descarga.
+function renderTideTiles(host){
+  var now = Date.now(), q = tzParts(now);
+  var ds = localToMs(q.y, q.mo, q.d, 0), de = localToMs(q.y, q.mo, q.d + 1, 0);
+  var ex = tideExtremes(ds - 4 * 3600000, de + 18 * 3600000), nextH = null, nextL = null, i;
+  for(i = 0; i < ex.length; i++){
+    if(ex[i].t <= now) continue;
+    if(ex[i].high && !nextH) nextH = ex[i];
+    if(!ex[i].high && !nextL) nextL = ex[i];
+  }
+  var rising = nextH && nextL ? nextH.t < nextL.t : !!nextH;
+  function sub(e, st){
+    if(!e) return '';
+    return (st ? st + ' · ' : '') + fmt(e.h + TIDE.datum, 1) + ' m · ' + etaText(e.t, now);
+  }
+  tile(host, nextH && nextH.t >= de ? 'Pleamar de mañana' : 'Próxima pleamar', nextH ? clockOf(nextH.t) : '–', '', sub(nextH, rising ? 'sube ahora' : ''));
+  tile(host, nextL && nextL.t >= de ? 'Bajamar de mañana' : 'Próxima bajamar', nextL ? clockOf(nextL.t) : '–', '', sub(nextL, rising ? '' : 'baja ahora'));
+  var cs = ex.filter(function(e){ return e.high && e.t >= ds && e.t < de; }).map(function(e){ return Math.round(tideCoef(e.t)); });
+  if(cs.length){
+    var avg = Math.round(cs.reduce(function(a, b){ return a + b; }, 0) / cs.length);
+    tile(host, 'Coeficiente hoy', String(avg), '', 'marea ' + coefWord(avg) + (cs.length > 1 ? ' · ' + cs.join(' y ') : ''));
+  }
+}
+function renderTides(){
+  var host = $('chTide'), tb = $('tideDays'), tt = $('tideTiles'), card = $('tideCard'), pl = place();
+  clear(host); clear(tb); clear(tt);
+  // Solo Santander tiene mareas: en los demás lugares la tarjeta se oculta.
+  if(!pl.tide){ card.hidden = true; return; }
+  card.hidden = false;
+  $('tideHint').textContent = 'Pleamares y bajamares en ' + TIDE.place + ', calculadas en esta misma página con las constantes del mareógrafo de ' + TIDE.ref +
+    ' (no necesitan conexión). Alturas en metros sobre el cero de las tablas, de forma aproximada.';
+  try{
+    var v = tideView(), N = v.N, i;
+    renderTideTiles(tt);
+    var mn = Infinity, mx = -Infinity;
+    v.curve.forEach(function(z){ if(z < mn) mn = z; if(z > mx) mx = z; });
+    var y = niceScale(mn - 0.3, mx + 0.3, 5);
+    var times = [];
+    for(i = 0; i <= N; i++) times.push(localIso(v.t0 + i * 3600000));
+    var c = baseChart(host, {height:230, n:N + 1, times:times, y:y, left:36, yFmt:function(vv){ return fmt(vv, vv % 1 ? 1 : 0); },
+                             aria:'Altura de la marea por hora en ' + TIDE.place});
+    var g = c.g, X = function(hr){ return g.l + hr / N * g.pw; };
+    // nivel medio
+    var ym = g.yOf(TIDE.datum);
+    if(ym > g.t && ym < g.t + g.ph) S('line', {'class':'zl', x1:g.l, x2:g.l + g.pw, y1:ym, y2:ym, 'stroke-dasharray':'4 4'}, c.svg);
+    var d = '', area = '';
+    v.curve.forEach(function(z, k){ d += (k ? 'L' : 'M') + X(k / 6).toFixed(1) + ' ' + g.yOf(z).toFixed(1); });
+    area = d + 'L' + X(N).toFixed(1) + ' ' + (g.t + g.ph) + 'L' + X(0).toFixed(1) + ' ' + (g.t + g.ph) + 'Z';
+    var ar = S('path', {d:area, stroke:'none'}, c.svg); ar.style.fill = 'var(--accent)'; ar.style.fillOpacity = '0.13';
+    var ln = S('path', {d:d, fill:'none', 'stroke-width':2, 'stroke-linejoin':'round', 'stroke-linecap':'round'}, c.svg); ln.style.stroke = 'var(--accent)';
+    var showLab = g.pw / N * 12.4 >= 42;            // ¿caben las horas entre dos pleamares seguidas?
+    v.ex.forEach(function(e){
+      var hr = (e.t - v.t0) / 3600000;
+      if(hr < 0 || hr > N) return;
+      var x = X(hr), yy = g.yOf(e.z);
+      var dot = S('circle', {cx:x, cy:yy, r:4.5, 'stroke-width':2}, c.svg);
+      dot.style.fill = e.high ? 'var(--accent)' : 'var(--surface)'; dot.style.stroke = e.high ? 'var(--surface)' : 'var(--accent)';
+      if(showLab){
+        var tx = S('text', {'class':'axm', x:x, y:e.high ? yy - 9 : yy + 17, 'text-anchor':x < g.l + 16 ? 'start' : x > g.l + g.pw - 16 ? 'end' : 'middle'}, c.svg);
+        tx.textContent = clockOf(e.t);
+      }
+    });
+    attachHover(host, c.svg, g, function(i){
+      var ms = v.t0 + i * 3600000, z = tideLevel(ms) + TIDE.datum;
+      var items = [{color:'var(--accent)', name:'Altura', value:fmt(z, 1) + ' m · ' + (tideSlope(ms) > 0 ? 'sube' : 'baja')}];
+      v.ex.forEach(function(e){
+        if(Math.abs(e.t - ms) <= 30 * 60000) items.push({color:null, name:e.high ? 'Pleamar' : 'Bajamar',
+          value:clockOf(e.t) + ' · ' + fmt(e.z, 1) + ' m' + (e.high ? ' · coef. ' + Math.round(e.coef) : '')});
+      });
+      return {title:fmtHour(times[i]), items:items};
+    });
+
+    // Tabla por días
+    var head = H('tr', null, null, H('thead', null, null, tb));
+    ['Día', 'Pleamares ▲', 'Bajamares ▼', 'Coef.'].forEach(function(t){ H('th', null, t, head); });
+    var body = H('tbody', null, null, tb), now = Date.now(), q = tzParts(v.ds), k;
+    for(k = 0; k < 10; k++){
+      var s = localToMs(q.y, q.mo, q.d + k, 0), e2 = localToMs(q.y, q.mo, q.d + k + 1, 0);
+      if(s >= v.de) break;
+      var dq = tzParts(s), evs = v.ex.filter(function(e){ return e.t >= s && e.t < e2; });
+      var tr = H('tr', null, null, body), dc = H('td', null, DOW[dowOf(dq)] + ' ' + dq.d + ' ' + MON[dq.mo], tr);
+      if(k < 2) H('small', null, k === 0 ? 'hoy' : 'mañana', dc);
+      var hc = H('td', null, null, tr), lc = H('td', null, null, tr), cc = H('td', null, null, tr);
+      evs.forEach(function(e){
+        var cls = 'ev' + (e.t < now ? ' past' : '');
+        var row = H('div', {'class':cls}, null, e.high ? hc : lc);
+        H('b', null, clockOf(e.t), row);
+        row.appendChild(document.createTextNode(' ' + fmt(e.z, 1) + ' m'));
+        if(e.high){
+          var cr = H('div', {'class':cls}, null, cc), cv = Math.round(e.coef);
+          var pill = H('span', {'class':'cf', title:'Marea ' + coefWord(cv)}, String(cv), cr);
+          coefStyle(pill, cv);
+        }
+      });
+      [hc, lc, cc].forEach(function(td){ if(!td.firstChild){ td.textContent = '–'; td.className = 'muted'; } });
+    }
+    $('tideNote').textContent = 'Coeficiente de marea (20 a 120, como en las tablas francesas; se calcula igual que el SHOM, con la marea de Brest): hasta 45 muerta · 46 a 70 media · 71 a 95 viva · más de 95 muy viva. ' +
+      'Es una predicción astronómica: no incluye la presión ni el viento, que pueden cambiar la altura real unos 20 a 40 cm. ' +
+      'El mareógrafo de ' + TIDE.ref + ' está a ' + fmt(distKm(pl, TIDE), 1) + ' km del punto de previsión, así que la hora apenas cambia (margen: unos ±10 min y ±0,3 m). ' +
+      'Contrastado con dos tablas publicadas de ' + TIDE.ref + ' (octubre y noviembre de 2026): horas con diferencias típicas de 3 min y alturas que difieren de 0,1 a 0,3 m según la tabla y el momento del ciclo de vivas y muertas.';
+  }catch(err){
+    clear(host); clear(tb); clear(tt);
+    H('p', {'class':'hint'}, 'No se ha podido calcular la marea en este navegador.', host);
+    if(window.console && console.error) console.error(err);
+  }
+}
+
+/* ================= Diagnóstico ================= */
+function placeLabel(id){
+  for(var i = 0; i < CONFIG.places.length; i++){ if(CONFIG.places[i].id === id) return CONFIG.places[i].label; }
+  return id || '';
+}
+// Celda más cercana a un lugar según el paso de rejilla esperado del modelo (centros en múltiplos del paso).
+function nearestCell(modelId, p){
+  var st = CELLSTEP[modelId];
+  return {la:+(Math.round(p.lat / st) * st).toFixed(4), lo:+(Math.round(p.lon / st) * st).toFixed(4)};
+}
+// Aviso si la celda que usó Open-Meteo no es la más cercana al punto (con «Tierra» puede elegir una vecina).
+var IRREGULAR = {ifs:true};     // IFS 9 km: rejilla gaussiana reducida, sus celdas no caen en una cuadrícula regular de 0,1°
+function cellTag(g){
+  if(IRREGULAR[g.mid]) return '';
+  var p = null, st = CELLSTEP[g.mid];
+  CONFIG.places.forEach(function(x){ if(x.id === g.place) p = x; });
+  if(!p || !st) return '';
+  var n = nearestCell(g.mid, p);
+  if(Math.abs(g.lat - n.la) > st * 0.45 || Math.abs(g.lon - n.lo) > st * 0.45){
+    return ' ≠ la más cercana (' + fmt(n.la, 4) + ', ' + fmt(n.lo, 4) + ')';
+  }
+  return '';
+}
+function gridText(d){
+  var gs = d.grids;
+  if(!gs || !gs.length) return '–';
+  return gs.map(function(g){
+    return placeLabel(g.place) + ': ' + fmt(g.lat, 4) + ', ' + fmt(g.lon, 4) + (isNum(g.elev) ? ' · punto a ' + fmtK(g.elev) + ' m' : '') + cellTag(g);
+  }).join(' || ');
+}
+// d.hours y d.empty traen un elemento por lugar (en el orden de CONFIG.places).
+function hoursText(d){
+  if(d.ok !== true || !d.hours || !d.hours.length) return '–';
+  return CONFIG.places.map(function(p, k){ return p.label + ' ' + d.hours[k]; }).join(' · ');
+}
+function emptyText(d){
+  if(d.ok !== true || !d.empty || !d.empty.length) return '–';
+  var out = [];
+  d.empty.forEach(function(list, k){
+    if(!list || !list.length || !CONFIG.places[k]) return;
+    out.push(CONFIG.places[k].label + ': ' + (list.length >= d.nvars ? 'ninguna variable' : list.join(', ')));
+  });
+  return out.length ? out.join(' || ') : 'nada';
+}
+function renderDiag(){
+  var tbl = $('diagTbl'); clear(tbl);
+  var head = H('tr', null, null, H('thead', null, null, tbl));
+  ['Modelo', 'Llamada', 'Estado', 'Horas', 'Tiempo', 'Sin datos en', 'Celdas'].forEach(function(t){ H('th', null, t, head); });
+  var body = H('tbody', null, null, tbl);
+  DIAG.forEach(function(d){
+    var tr = H('tr', null, null, body);
+    H('td', null, d.model, tr);
+    H('td', null, d.kind, tr);
+    var stxt = d.ok === null ? ('pendiente · ' + Math.round((Date.now() - d.t0) / 1000) + ' s')
+             : d.ok ? ('correcto' + (d.msg ? ' · ' + d.msg : '')) : ('error: ' + d.msg);
+    var st = H('td', {'class':'l'}, stxt, tr);
+    if(d.ok === false) st.style.color = 'var(--bad)';
+    H('td', {'class':'l'}, hoursText(d), tr);
+    H('td', null, d.ms === null ? '–' : fmt(d.ms / 1000, 1) + ' s', tr);
+    H('td', {'class':'l'}, emptyText(d), tr);
+    H('td', {'class':'l'}, gridText(d), tr);
+  });
+}
+function diagText(){
+  var lines = ['Meteo Familia · diagnóstico · ' + new Date().toISOString() +
+    (LOADING ? ' · EN CURSO ' + JOBS_DONE + '/' + JOBS_TOTAL : '') +
+    ' · celda: ' + state.csel +
+    ' · conexión: ' + (navigator.onLine === false ? 'no' : 'sí')];
+  DIAG.forEach(function(d){
+    var st = d.ok === null ? 'PENDIENTE ' + Math.round((Date.now() - d.t0) / 1000) + ' s' : d.ok ? 'ok' : 'ERROR';
+    lines.push([d.model, d.kind, st, d.msg || '', 'horas: ' + hoursText(d), d.ms === null ? '–' : (d.ms / 1000).toFixed(1) + ' s',
+                'sin datos: ' + emptyText(d),
+                'celdas: ' + (d.grids && d.grids.length ? d.grids.map(function(g){ return g.place + '=' + g.lat + ',' + g.lon + (isNum(g.elev) ? ',' + g.elev + 'm' : '') + cellTag(g); }).join(' ') : '–'),
+                d.url].join(' | '));
+  });
+  if(CELLS.data){
+    lines.push('celdas vecinas (' + placeLabel(CELLS.place) + ') · filas de norte a sur, columnas de oeste a este · lat,lon,altura media m,lluvia 48 h mm');
+    MODELS.forEach(function(m){
+      var d = CELLS.data[m.id]; if(!d) return;
+      lines.push(m.name + ' | ' + (d.err ? 'ERROR ' + d.err : 'punto a ' + (isNum(d.ref) ? d.ref + ' m' : '–') + ' | ' + d.pts.map(function(c){ return [c.lat, c.lon, c.elev, c.p === null ? '–' : c.p.toFixed(1)].join(','); }).join(' ; ')));
+    });
+  }
+  return lines.join('\n');
+}
+
+/* ================= Celdas vecinas (solo en el diagnóstico, bajo demanda) ================= */
+var CELLS = {busy:false, data:null, place:null, at:null};             // data[id] = {c:{lat,lon}, ref, pts:[9 celdas] | err}
+var LMAP = null, LMODEL = null;
+function cellsUrl(m, c){
+  var st = CELLSTEP[m.id], la = [], lo = [], el = [];
+  for(var i = 1; i >= -1; i--){ for(var j = -1; j <= 1; j++){ la.push((c.lat + i * st).toFixed(4)); lo.push((c.lon + j * st).toFixed(4)); el.push('nan'); } }
+  return API + '?latitude=' + la.join(',') + '&longitude=' + lo.join(',') + '&elevation=' + el.join(',') +
+    '&hourly=precipitation&models=' + m.api + '&forecast_hours=48&cell_selection=nearest&timezone=' + encodeURIComponent(CONFIG.tz);
+}
+function loadCells(){
+  if(CELLS.busy) return;
+  var todo = MODELS.filter(function(m){ return placeGrid(m); });
+  if(!todo.length){ $('cellsMsg').textContent = 'Espera a que carguen los datos del panel.'; return; }
+  CELLS.busy = true; CELLS.data = {}; CELLS.place = state.place; CELLS.at = null;
+  $('cellsBtn').disabled = true; $('cellsMsg').textContent = 'Consultando…';
+  renderCells();
+  var steps = todo.map(function(m){
+    return function(){
+      var c = placeGrid(m), ref = c.elev;
+      return fetchRetry(cellsUrl(m, c)).then(function(j){
+        var arr = Array.isArray(j) ? j : [j], pts = [];
+        arr.forEach(function(o, k){
+          var pr = (o.hourly && o.hourly.precipitation) || [], tot = 0, n = 0;
+          for(var q = 0; q < pr.length; q++){ if(pr[q] !== null && pr[q] !== undefined){ tot += pr[q]; n++; } }
+          pts.push({k:k, lat:o.latitude, lon:o.longitude, elev:o.elevation, p:n ? tot : null, n:n});
+        });
+        if(pts.length !== 9) throw new Error('respuesta con ' + pts.length + ' celdas en lugar de 9');
+        CELLS.data[m.id] = {c:c, ref:ref, pts:pts};
+      }, function(e){ CELLS.data[m.id] = {c:c, ref:ref, err:e.message}; }).then(function(){ renderCells(); });
+    };
+  });
+  runPool(steps, 2).then(function(){
+    CELLS.busy = false; CELLS.at = new Date();
+    $('cellsBtn').disabled = false; $('cellsBtn').textContent = 'Volver a consultar';
+    $('cellsMsg').textContent = 'Consultado a las ' + pad(CELLS.at.getHours()) + ':' + pad(CELLS.at.getMinutes());
+    renderCells();
+  });
+}
+function dElev(c, ref){
+  if(c.elev === null || c.elev === undefined || !isNum(ref)) return '';
+  var d = Math.round(c.elev - ref);
+  return 'Δ ' + (d >= 0 ? '+' : '−') + fmtK(Math.abs(d)) + ' m';
+}
+function renderCells(){
+  var host = $('cellsOut'); clear(host);
+  if(!CELLS.data) return;
+  var plName = placeLabel(CELLS.place);
+  MODELS.forEach(function(m){
+    var d = CELLS.data[m.id]; if(!d) return;
+    H('div', {'class':'cx-m'}, m.name + ' · ' + plName + ' · celda del panel ' + fmt(d.c.lat, 4) + ', ' + fmt(d.c.lon, 4), host);
+    if(d.err){ var er = H('p', {'class':'cx-s'}, 'Error: ' + d.err, host); er.style.color = 'var(--bad)'; return; }
+    var best = -1, bd = Infinity, emin = Infinity, emax = -Infinity, pmin = Infinity, pmax = -Infinity, seen = {};
+    d.pts.forEach(function(c, k){
+      seen[Number(c.lat).toFixed(3) + ',' + Number(c.lon).toFixed(3)] = 1;
+      if(c.elev !== null && c.elev !== undefined){
+        if(isNum(d.ref)){ var dd = Math.abs(c.elev - d.ref); if(dd < bd){ bd = dd; best = k; } }
+        if(c.elev < emin) emin = c.elev; if(c.elev > emax) emax = c.elev;
+      }
+      if(c.p !== null){ if(c.p < pmin) pmin = c.p; if(c.p > pmax) pmax = c.p; }
+    });
+    var tb = H('tbody', null, null, H('table', {'class':'cx-t'}, null, host));
+    for(var r = 0; r < 3; r++){
+      var tr = H('tr', null, null, tb);
+      for(var q = 0; q < 3; q++){
+        var k = r * 3 + q, c = d.pts[k];
+        var td = H('td', {title:fmt(c.lat, 4) + ', ' + fmt(c.lon, 4)}, null, tr);
+        if(k === 4) td.className = 'c';
+        var e = c.elev === null || c.elev === undefined ? '–' : fmtK(c.elev) + ' m';
+        H('b', null, (k === best ? '● ' : '') + e, td);
+        H('small', null, dElev(c, d.ref), td);
+        H('small', null, c.p === null ? 'sin datos' : fmt(c.p, 0) + ' mm', td);
+      }
+    }
+    var txt = 'Punto a ' + (isNum(d.ref) ? fmtK(d.ref) + ' m' : '–') + ' · altura media de las 9 celdas: ' + (emin === Infinity ? '–' : fmtK(emin) + '–' + fmtK(emax) + ' m') +
+      ' · lluvia en 48 h: ' + (pmin === Infinity ? '–' : fmt(pmin, 0) + '–' + fmt(pmax, 0) + ' mm') +
+      ' · ● = la de altura más cercana a la del punto. Filas de norte a sur, columnas de oeste a este. Una celda de mar sale con 0 m.';
+    if(Object.keys(seen).length < 9) txt += ' Algunas vecinas devuelven la misma celda: la rejilla de este modelo no es regular o su paso no es el esperado.';
+    H('p', {'class':'cx-s'}, txt, host);
+  });
+  if(!CELLS.busy && CELLS.at){
+    var row = H('div', {'class':'cx-row'}, null, host);
+    H('span', null, 'Mapa de', row);
+    var sel = H('select', {id:'cxSel', 'aria-label':'Modelo del mapa'}, null, row);
+    MODELS.forEach(function(m){ if(CELLS.data[m.id] && CELLS.data[m.id].pts){ var o = H('option', {value:m.id}, m.name, sel); if(m.id === (LMODEL || 'arome_hd')) o.selected = true; } });
+    var bt = H('button', {type:'button', 'class':'btn', id:'cxBtn'}, 'Ver en el mapa', row);
+    bt.addEventListener('click', function(){ showCellMap($('cxSel').value); });
+    sel.addEventListener('change', function(){ if(LMAP) showCellMap(sel.value); });
+    H('div', {id:'cxMapBox'}, null, host);
+    if(LMAP && LMODEL && CELLS.data[LMODEL]){ showCellMap(LMODEL); }
+    else { LMAP = null; }
+  }
+}
+function withLeaflet(cb, fail){
+  if(window.L){ cb(); return; }
+  var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(css);
+  var sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+  sc.onload = function(){ if(window.L) cb(); else fail(); }; sc.onerror = fail;
+  document.head.appendChild(sc);
+}
+function cssVar(name){ return (getComputedStyle(document.documentElement).getPropertyValue(name) || '').trim() || '#555'; }
+function showCellMap(id){
+  var m = MODEL_BY_ID[id], d = CELLS.data && CELLS.data[id], box = $('cxMapBox');
+  if(!m || !d || !d.pts || !box) return;
+  withLeaflet(function(){
+    if(LMAP){ LMAP.remove(); LMAP = null; }
+    clear(box); box.style.display = '';
+    var el = H('div', {id:'cxMap'}, null, box);
+    var st = CELLSTEP[id], col = cssVar((m.color.match(/--[\w-]+/) || ['--ink2'])[0]);
+    var map = L.map(el, {scrollWheelZoom:false});
+    var topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {maxZoom:17, attribution:'OpenTopoMap, OpenStreetMap'});
+    var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'OpenStreetMap'});
+    osm.addTo(map); L.control.layers({'Calles':osm, 'Relieve':topo}, null, {collapsed:true}).addTo(map);
+    var all = [], best = -1, bd = Infinity;
+    if(isNum(d.ref)) d.pts.forEach(function(c, k){ if(c.elev !== null && c.elev !== undefined){ var dd = Math.abs(c.elev - d.ref); if(dd < bd){ bd = dd; best = k; } } });
+    d.pts.forEach(function(c, k){
+      var b = [[c.lat - st / 2, c.lon - st / 2], [c.lat + st / 2, c.lon + st / 2]];
+      var r = L.rectangle(b, {color:col, weight:k === 4 ? 3 : 1.5, dashArray:k === best ? '6 4' : null, fillOpacity:k === 4 ? 0.14 : 0.05}).addTo(map);
+      r.bindTooltip('<b>' + (c.elev === null || c.elev === undefined ? '–' : fmtK(c.elev) + ' m') + '</b><br>' + (c.p === null ? '–' : fmt(c.p, 0) + ' mm'), {permanent:true, direction:'center', className:'cxt'});
+      all.push(b[0], b[1]);
+    });
+    CONFIG.places.forEach(function(p){
+      var cur = p.id === CELLS.place;
+      L.circleMarker([p.lat, p.lon], {radius:cur ? 6 : 4, color:'#fff', weight:2, fillColor:cur ? '#000' : '#777', fillOpacity:1}).addTo(map).bindTooltip(p.label);
+    });
+    map.fitBounds(all, {padding:[8, 8]});
+    LMAP = map; LMODEL = id;
+    setTimeout(function(){ map.invalidateSize(); }, 200);
+    H('p', {'class':'cx-s'}, 'Recuadro grueso: celda del panel. Discontinuo: la de altura más cercana a la del punto. Cada celda muestra su altura media y la lluvia prevista en 48 h. Punto negro: ' + placeLabel(CELLS.place) + '; gris: los otros lugares.', box);
+  }, function(){
+    clear(box); H('p', {'class':'cx-s'}, 'No se pudo cargar el mapa (¿sin conexión?). La tabla de arriba tiene los mismos datos.', box);
+  });
+}
+
+/* ================= Controles ================= */
+function renderControls(){
+  $('h1').textContent = place().label + ', hora a hora';
+  var sp = $('seg-place'); clear(sp);
+  CONFIG.places.forEach(function(p){
+    var b = H('button', {type:'button', role:'radio', 'aria-checked':String(p.id === state.place), 'data-v':p.id}, p.label, sp);
+    b.addEventListener('click', function(){ state.place = p.id; persist(); renderControls(); renderAll(); });
+  });
+  var sw = $('seg-win'); clear(sw);
+  CONFIG.windows.forEach(function(w){
+    var b = H('button', {type:'button', role:'radio', 'aria-checked':String(w.h === state.win), 'data-v':w.h}, w.label, sw);
+    b.addEventListener('click', function(){ state.win = w.h; persist(); renderControls(); renderAll(); });
+  });
+  var rs = $('refModel'); clear(rs);
+  var oa = H('option', {value:'auto'}, 'Automático (el más detallado que cubra la ventana)', rs);
+  if(state.ref === 'auto') oa.selected = true;
+  MODELS.forEach(function(m){
+    var o = H('option', {value:m.id}, m.name + (m.ok || m.loading || !MASTER.length ? '' : ' (sin datos)'), rs);
+    if(m.id === state.ref) o.selected = true;
+  });
+  var dv = $('dvar'); clear(dv);
+  DAILY_VARS.forEach(function(v){ var o = H('option', {value:v.k}, v.label, dv); if(v.k === state.dvar) o.selected = true; });
+  $('csel').value = state.csel;
+  var lg = $('legend'); clear(lg);
+  MODELS.forEach(function(m){
+    var b = H('button', {type:'button', 'class':'chip', 'aria-pressed':String(!!state.vis[m.id]), title:'Mostrar u ocultar ' + m.name + (m.id === 'arome' ? '. Mismo modelo que el de 1,5 km; sus datos se usan igualmente para nubosidad y sol.' : '')}, null, lg);
+    var k = H('span', {'class':'key'}, null, b); k.style.background = m.color;
+    H('span', {'class':'nm'}, m.name, b);
+    b.addEventListener('click', function(){ state.vis[m.id] = !state.vis[m.id]; persist(); renderControls(); renderAll(); });
+  });
+  var an = $('aromeNote');
+  if(!an){ an = H('p', {id:'aromeNote', 'class':'hint'}, null, null); lg.parentNode.insertBefore(an, lg.nextSibling); }
+  an.hidden = !!state.vis.arome;
+  an.textContent = 'AROME 2,5 km oculto: es el mismo modelo que el de 1,5 km, con más variables. Se sigue usando para la nubosidad y el sol. Púlsalo para ver su curva.';
+}
+// Notas bajo los controles: qué modelo es la referencia y qué lugares comparten celda.
+function renderNotes(){
+  var rn = $('refNow'), pn = $('placeNote'), rm = refModel(), N = winLen(), pl = place();
+  // Coordenadas del punto y altura que Open-Meteo le da (de ahí sale el ajuste de temperatura).
+  var ps = 'Punto de previsión: ' + fmt(pl.lat, 4) + ' N, ' + fmt(Math.abs(pl.lon), 4) + (pl.lon < 0 ? ' O' : ' E') + '.';
+  var pg = rm ? placeGrid(rm) : null;
+  if(pg && isNum(pg.elev)) ps += ' Open-Meteo sitúa el punto a ' + fmtK(pg.elev) + ' m de altura y ajusta la temperatura a ella.';
+  pn.textContent = ps;
+  if(!rm){ rn.textContent = ''; return; }
+  var c = countIn(ser(rm, 'temperature_2m'), N);
+  var t = state.ref === 'auto' ? 'Referencia automática ahora: ' + rm.name + '. ' : '';
+  if(N && c < N) t += (state.ref === 'auto' ? 'Cubre ' : rm.name + ' cubre ') + c + ' de las ' + N + ' h de la ventana: las tarjetas de arriba y la tabla horaria solo cuentan esas horas.';
+  else if(state.ref === 'auto') t += 'Cubre toda la ventana.';
+  rn.textContent = t;
+}
+
+/* ================= Render ================= */
+function renderUpdated(){
+  var u = $('updated');
+  $('refresh').disabled = LOADING;
+  if(LOADING){ u.textContent = 'Actualizando… ' + JOBS_DONE + '/' + JOBS_TOTAL; }
+  else if(LAST_OK){ u.textContent = 'Actualizado ' + pad(LAST_OK.getHours()) + ':' + pad(LAST_OK.getMinutes()); }
+  else { u.textContent = 'Sin datos'; }
+}
+function renderBanner(){
+  var b = $('banner');
+  var failed = MODELS.filter(function(m){ return !m.ok && !m.loading; });
+  var stale = MODELS.filter(function(m){ return m.ok && m.stale; });
+  var names = function(list){ return list.map(function(m){ return m.name; }).join(', '); };
+  if(!LOADING && !MASTER.length && DIAG.length){
+    b.hidden = false; clear(b);
+    H('b', null, 'No se han podido cargar datos. ', b);
+    b.appendChild(document.createTextNode('Comprueba la conexión y vuelve a pulsar Actualizar. Si abriste el archivo desde el visor de archivos del móvil, ábrelo con el navegador (Chrome o Safari). Detalle en el diagnóstico, al final de la página.'));
+  } else if(!LOADING && (failed.length || stale.length)){
+    b.hidden = false; clear(b);
+    if(failed.length){
+      H('b', null, 'Algunos modelos no han respondido: ', b);
+      b.appendChild(document.createTextNode(names(failed) + '. El resto de la página usa los demás modelos.'));
+    }
+    if(stale.length){
+      if(failed.length) b.appendChild(document.createElement('br'));
+      H('b', null, 'No se han podido actualizar: ', b);
+      b.appendChild(document.createTextNode(names(stale) + '. Se muestran los datos anteriores.'));
+    }
+  } else { b.hidden = true; }
+}
+var renderPending = false;
+function renderAll(){
+  if(renderPending) return;
+  renderPending = true;
+  var run = function(){
+    renderPending = false;
+    renderUpdated(); renderBanner(); renderNotes(); renderTiles(); renderDaily(); renderTides(); renderCompare();
+    renderTemp(); renderPrecip(); renderSky(); renderWind(); renderHourly(); renderDiag();
+  };
+  if(typeof requestAnimationFrame === 'function') requestAnimationFrame(run); else run();
+}
+
+/* ================= Arranque ================= */
+$('refresh').addEventListener('click', function(){ loadAll(); });
+$('cellsBtn').addEventListener('click', loadCells);
+$('refModel').addEventListener('change', function(e){ state.ref = e.target.value; persist(); renderAll(); });
+$('dvar').addEventListener('change', function(e){ state.dvar = e.target.value; persist(); renderAll(); });
+$('csel').addEventListener('change', function(e){ state.csel = e.target.value; persist(); CELLS.data = null; renderCells(); loadAll(); });
+$('copyDiag').addEventListener('click', function(){
+  var txt = diagText(), msg = $('copyMsg');
+  function fallback(){
+    var ta = H('textarea', {readonly:'', 'aria-label':'Diagnóstico'}, txt, document.body);
+    ta.style.position = 'fixed'; ta.style.left = '-9999px'; ta.select();
+    var ok = false; try{ ok = document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(ta);
+    msg.textContent = ok ? 'Copiado' : 'No se pudo copiar';
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){ msg.textContent = 'Copiado'; }, fallback);
+  } else { fallback(); }
+});
+var resizeTimer = null, lastW = 0;
+window.addEventListener('resize', function(){
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function(){
+    var w = $('app').clientWidth;
+    if(w !== lastW){ lastW = w; if(MASTER.length) renderAll(); }
+  }, 150);
+});
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden && LAST_OK && (Date.now() - LAST_OK.getTime()) > CONFIG.refreshMin * 60000) loadAll();
+});
+setInterval(function(){ if(!document.hidden) loadAll(); }, CONFIG.refreshMin * 60000);
+
+lastW = $('app').clientWidth;
+renderControls();
+loadAll().then(function(){ renderControls(); });
+})();
+</script>
+<noscript><p style="padding:16px">Esta página necesita JavaScript para consultar los modelos.</p></noscript>
+</body>
+</html>
